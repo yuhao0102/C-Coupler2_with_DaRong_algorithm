@@ -1,9 +1,0 @@
-Building dependency for variable_init_mod.d
-Building dependency for spmd_init_mod.d
-Building dependency for parse_namelist_mod.d
-Building dependency for model_setting_mod.d
-Building dependency for grid_init_mod.d
-Building dependency for decomp_init_mod.d
-Building dependency for coupling_ocn_model_mod.d
-Building dependency for atm_demo.d
-mpiifort -lstdc++ -o /data/home/yuhao/course/demo_coupler/model_experiments/run/atm/atm_demo/exe/atm_demo atm_demo.o coupling_ocn_model_mod.o decomp_init_mod.o grid_init_mod.o model_setting_mod.o parse_namelist_mod.o spmd_init_mod.o variable_init_mod.o -L/data/home/yuhao/course/demo_coupler/model_experiments/run/lib -lc_coupler -L/opt/netCDF-intel13-without-hdf5/lib -lnetcdff -lnetcdf -L/opt/intel/impi/3.2.0.011/lib64  
