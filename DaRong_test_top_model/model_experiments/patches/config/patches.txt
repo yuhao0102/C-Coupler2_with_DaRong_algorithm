@@ -1,0 +1,2244 @@
+diff --git a/atm/GAMIL2.0_128x60/compiler.cfg b/atm/GAMIL2.0_128x60/compiler.cfg
+old mode 100644
+new mode 100755
+diff --git a/atm/GAMIL2.0_128x60/field_buf_register.cfg b/atm/GAMIL2.0_128x60/field_buf_register.cfg
+old mode 100644
+new mode 100755
+diff --git a/atm/GAMIL2.0_128x60/private_field_attribute.cfg b/atm/GAMIL2.0_128x60/private_field_attribute.cfg
+old mode 100644
+new mode 100755
+diff --git a/atm/WRFV3.6/compiler.cfg b/atm/WRFV3.6/compiler.cfg
+old mode 100644
+new mode 100755
+diff --git a/atm/WRFV3.6/field_buf_register.cfg b/atm/WRFV3.6/field_buf_register.cfg
+old mode 100644
+new mode 100755
+diff --git a/atm/WRFV3.6/namelist.input b/atm/WRFV3.6/namelist.input
+old mode 100644
+new mode 100755
+diff --git a/atm/WRFV3.6/private_field_attribute.cfg b/atm/WRFV3.6/private_field_attribute.cfg
+old mode 100644
+new mode 100755
+diff --git a/atm/WRFV3/compiler.cfg b/atm/WRFV3/compiler.cfg
+old mode 100644
+new mode 100755
+diff --git a/atm/WRFV3/field_buf_register.cfg b/atm/WRFV3/field_buf_register.cfg
+old mode 100644
+new mode 100755
+diff --git a/atm/WRFV3/private_field_attribute.cfg b/atm/WRFV3/private_field_attribute.cfg
+old mode 100644
+new mode 100755
+diff --git a/cesm/cesm1_0_5/Macros.CCPL b/cesm/cesm1_0_5/Macros.CCPL
+old mode 100644
+new mode 100755
+diff --git a/cesm/cesm1_0_5/compiler.cfg b/cesm/cesm1_0_5/compiler.cfg
+old mode 100644
+new mode 100755
+diff --git a/cesm/cesm1_2_1/build.sh b/cesm/cesm1_2_1/build.sh
+index d0c79c4..b0af6e0 100755
+--- a/cesm/cesm1_2_1/build.sh
++++ b/cesm/cesm1_2_1/build.sh
+@@ -2,19 +2,8 @@
+ 
+ function dump_Macros
+ {
+-    use_comm=$(grep "COMMON_COMPILER" $2)
+-    tmp_file=$(mktemp)
+-    if [ "${use_comm}" != "" ]; then
+-    	cat $1 > ${tmp_file}
+-    	cat $2 >> ${tmp_file}
+-        sed -i "/COMMON_COMPILER/d" ${tmp_file}
+-    else
+-    	cat $2 > $3
+-    fi
+-
+-    tmp_makefile=$(mktemp)
+-cat > ${tmp_makefile} << EOF
+-include ${tmp_file}
++cat > /tmp/makefile << EOF
++include $2
+ all:
+ 	@echo "CPPDEFS += \${CPPDEFS}"
+ 	@echo 
+@@ -64,13 +53,11 @@ all:
+ 	@echo
+ EOF
+  
+-    make -f ${tmp_makefile} >& $3
++    make -f /tmp/makefile >& $3
+     sed -i  "/\<FFLAGS\>/{s# -r8 # #; s# -i4 # #}" $3
+     ncpath=$(grep "^NETCDFINC" $1) 
+     ncpath=$(echo $ncpath|sed "s#.*-I\(.*\)/include#\1#g")
+     echo "NETCDF_PATH := $ncpath" >> $3
+-    unlink ${tmp_file}
+-    unlink ${tmp_makefile}
+ }
+ 
+ 
+@@ -90,9 +77,17 @@ MYPATH=$(readlink -f "$0")
+ MYPATH=$(dirname "$MYPATH")
+ # =================================
+ 
++Macfile=${CASEROOT}/config/common/machine/${MACH}/common_compiler.${MACH}.cfg
++Common=$Macfile
++if [ -f $MYPATH/compiler.cfg ]; then
++   Macfile=$MYPATH/compiler.cfg
++fi
++
+ cd $MYPATH/cesm_case_scripts
+ 
+-dump_Macros "$COMMON_COMPILER" "$MACFILE" "Macros.CCPL"
++dump_Macros "$COMMON_COMPILER" "$MACFILE" "Macros"
++
++cat Macros
+ 
+ if [ ! -e "./.env_run.xml" ]; then
+    echo "Can't find .env_run.xml file"
+@@ -101,7 +96,7 @@ fi
+ 
+ rm -f $Exedir/cesm_bld/cesm.exe
+ 
+-./$CASE_NAME.CCPL.build
++./$CASE_NAME.build
+ 
+ if [ -f $Exedir/cesm_bld/cesm.exe ] ; then
+    cp $Exedir/cesm_bld/cesm.exe $EXEC
+@@ -109,7 +104,6 @@ else
+    exit 1
+ fi
+ 
+-
+ cd ${CASEROOT}
+ find ./ -name "seq_maps.rc" > .temp_file_list
+ while read line
+@@ -118,4 +112,3 @@ do
+ done < .temp_file_list
+ rm .temp_file_list
+ 
+-exit 0
+diff --git a/cesm/cesm1_2_1/compiler.cfg b/cesm/cesm1_2_1/compiler.cfg
+old mode 100644
+new mode 100755
+diff --git a/cesm/cesm1_2_1/config.sh b/cesm/cesm1_2_1/config.sh
+index bc4c902..fbbc073 100755
+--- a/cesm/cesm1_2_1/config.sh
++++ b/cesm/cesm1_2_1/config.sh
+@@ -63,11 +63,11 @@ change_files_name $PREVIOUS_CASE_NAME\. $CASE_NAME\.
+ rm -f  Buildconf/*input_data_list
+ 
+ rewrite_config=1
+-if [ -f $MYPATH/../../common/.original.case.conf ]; then
+-    if check_cesm_config "$MYPATH/../../common/.original.case.conf"; then
++if [ -f $MYPATH/../../common/.cesm.case.conf ]; then
++    if check_cesm_config "$MYPATH/../../common/.cesm.case.conf"; then
+         rewrite_config=0
+     else
+-        rm -f $MYPATH/../../common/.original.case.conf
++        rm -f $MYPATH/../../common/.cesm.case.conf
+     fi
+ fi
+ 
+diff --git a/common/machine/FIO_HPC/common_compiler.FIO_HPC.cfg b/common/machine/FIO_HPC/common_compiler.FIO_HPC.cfg
+old mode 100644
+new mode 100755
+diff --git a/common/machine/FIO_HPC/env.FIO_HPC b/common/machine/FIO_HPC/env.FIO_HPC
+old mode 100644
+new mode 100755
+diff --git a/common/machine/IAP_avatar/common_compiler.IAP_avatar.cfg b/common/machine/IAP_avatar/common_compiler.IAP_avatar.cfg
+old mode 100644
+new mode 100755
+diff --git a/common/machine/IAP_avatar/env.IAP_avatar b/common/machine/IAP_avatar/env.IAP_avatar
+old mode 100644
+new mode 100755
+diff --git a/common/machine/Tansuo100/common_compiler.Tansuo100.cfg b/common/machine/Tansuo100/common_compiler.Tansuo100.cfg
+old mode 100644
+new mode 100755
+diff --git a/common/machine/Tansuo100/env.Tansuo100 b/common/machine/Tansuo100/env.Tansuo100
+old mode 100644
+new mode 100755
+diff --git a/common/machine/Tianhe1/common_compiler.Tianhe1.cfg b/common/machine/Tianhe1/common_compiler.Tianhe1.cfg
+old mode 100644
+new mode 100755
+diff --git a/common/machine/Tianhe1/env.Tianhe1 b/common/machine/Tianhe1/env.Tianhe1
+old mode 100644
+new mode 100755
+diff --git a/common/machine/Tianhe1/submit.yhrun.Tianhe1 b/common/machine/Tianhe1/submit.yhrun.Tianhe1
+old mode 100644
+new mode 100755
+diff --git a/common/machine/generic_linux/common_compiler.generic_linux.cfg b/common/machine/generic_linux/common_compiler.generic_linux.cfg
+old mode 100644
+new mode 100755
+diff --git a/common/machine/generic_linux/env.generic_linux b/common/machine/generic_linux/env.generic_linux
+old mode 100644
+new mode 100755
+diff --git a/common/system/makedep/makdep.c b/common/system/makedep/makdep.c
+old mode 100644
+new mode 100755
+index 1a810fe..9d9d737
+--- a/common/system/makedep/makdep.c
++++ b/common/system/makedep/makdep.c
+@@ -58,7 +58,7 @@ static struct node *suffix_list;      /* List of Fortran suffixes to look for */
+ static void check (char *, struct node *, char *, int);
+ static int already_found (char *, struct node *);
+ 
+-main (int argc, char **argv)
++int main (int argc, char **argv)
+ {
+   int lastdot;             /* points to the last . in fname */
+   int c;                   /* return from getopt */
+diff --git a/common/system/makefile/Makefile.libs b/common/system/makefile/Makefile.libs
+old mode 100644
+new mode 100755
+diff --git a/common/system/makefile/Makefile.models b/common/system/makefile/Makefile.models
+old mode 100644
+new mode 100755
+index 655f7dc..ca9f81f
+--- a/common/system/makefile/Makefile.models
++++ b/common/system/makefile/Makefile.models
+@@ -32,8 +32,8 @@ else
+     # list of src files is all .F90 .F .c files in VPATH
+     SRCS := $(wildcard $(addsuffix /*.cxx , $(VPATH)) \
+ 		       $(addsuffix /*.F90, $(VPATH)) \
++		       $(addsuffix /*.For, $(VPATH)) \
+ 		       $(addsuffix /*.F, $(VPATH)) \
+-		       $(addsuffix /*.f, $(VPATH)) \
+ 		       $(addsuffix /*.f90, $(VPATH)) \
+ 		       $(addsuffix /*.[cF], $(VPATH)) )
+   endif
+@@ -45,7 +45,7 @@ INCS  := $(patsubst %,-I%, $(VPATH) )
+ RM    := rm
+ 
+ .SUFFIXES:
+-.SUFFIXES: .cxx .F90 .f90 .F .f .c .o
++.SUFFIXES: .cxx .For .F90 .f90 .F .f .c .o
+ 
+ all: $(EXEC)
+ 
+@@ -85,7 +85,6 @@ db_flags:
+ 	@echo "* cc      := $(CC)  $(CFLAGS) $(CPPDEFS) $(INCS) $(INCLDIR) $(CASE_LOCAL_INCL)"
+ 	@echo "* .F.o    := $(FC)  $(FFLAGS) $(CPPDEFS) $(FIXEDFLAGS) $(INCS) $(INCLDIR) $(CASE_LOCAL_INCL)"
+ 	@echo "* .F90.o  := $(FC)  $(FFLAGS) $(CPPDEFS) $(FREEFLAGS) $(INCS) $(INCLDIR) $(CASE_LOCAL_INCL)"
+-	@echo "* .f.o  := $(FC)  $(FFLAGS) $(CPPDEFS) $(FREEFLAGS) $(INCS) $(INCLDIR) $(CASE_LOCAL_INCL)"
+ 	@echo "* .f90.o  := $(FC)  $(FFLAGS) $(CPPDEFS) $(FREEFLAGS) $(INCS) $(INCLDIR) $(CASE_LOCAL_INCL)"
+ 
+ #-------------------------------------------------------------------------------
+@@ -101,11 +100,7 @@ $(EXEC): $(OBJS)
+ .c.o:
+ 	$(CC) -c $(INCLDIR) $(CASE_LOCAL_INCL) $(INCS) $(CPPDEFS) $(CFLAGS)  $<
+ 
+-
+ ifeq ($(CPP),NONE)
+-.f.o:
+-	$(FC) -c $(INCLDIR) $(CASE_LOCAL_INCL) $(INCS) $(FFLAGS) $(FREEFLAGS)  $(CPPFLAGS) $(CPPDEFS) $<
+-
+ .f90.o:
+ 	$(FC) -c $(INCLDIR) $(CASE_LOCAL_INCL) $(INCS) $(FFLAGS) $(FREEFLAGS)  $(CPPFLAGS) $(CPPDEFS) $<
+ 
+@@ -115,11 +110,10 @@ ifeq ($(CPP),NONE)
+ .F90.o:
+ 	$(FC) -c $(INCLDIR) $(CASE_LOCAL_INCL) $(INCS) $(FFLAGS) $(FREEFLAGS)  $(CPPFLAGS) $(CPPDEFS) $<
+ 
+-else
+-.f.o:
+-	$(CPP) $(CPPFLAGS) $(CPPDEFS) $(INCS) $(INCLDIR) $(CASE_LOCAL_INCL) $< > $*.F 
+-	$(FC) -c $(FFLAGS) $(FIXEDFLAGS) $(CPPDEFS) $(INCS) $(INCLDIR) $(CASE_LOCAL_INCL) $*.F  
++.For.o:
++	$(FC) -c $(INCLDIR) $(CASE_LOCAL_INCL) $(INCS) $(FFLAGS) $(FREEFLAGS)  $(CPPFLAGS) $(CPPDEFS) $<
+ 
++else
+ .f90.o:
+ 	$(CPP) $(CPPFLAGS) $(CPPDEFS) $(INCS) $(INCLDIR) $(CASE_LOCAL_INCL) $< > $*.F90 
+ 	$(FC) -c $(FFLAGS) $(FIXEDFLAGS) $(CPPDEFS) $(INCS) $(INCLDIR) $(CASE_LOCAL_INCL) $*.F90  
+@@ -132,16 +126,20 @@ else
+ 	$(CPP) $(CPPFLAGS) $(CPPDEFS) $(INCS) $(INCLDIR) $(CASE_LOCAL_INCL) $< > $*.f90
+ 	$(FC) -c $(FFLAGS) $(FREEFLAGS) $(CPPDEFS) $(INCS) $(INCLDIR) $(CASE_LOCAL_INCL) $*.f90  
+ 
++.For.o:
++	$(CPP) $(CPPFLAGS) $(CPPDEFS) $(INCS) $(INCLDIR) $(CASE_LOCAL_INCL) $< > $*.f
++	$(FC) -c $(FFLAGS) $(FREEFLAGS) $(CPPDEFS) $(INCS) $(INCLDIR) $(CASE_LOCAL_INCL) $*.f
++
+ endif
+ 
+ mostlyclean:
+-	$(RM) -f *.f *.f90 *.F90 *.F
++	$(RM) -f *.f *.f90 *.F90 *.F *.For
+ 
+ clean:
+-	$(RM) -f *.f *.F *.F90 *.f90 *.d *.$(MOD_SUFFIX) $(OBJS)
++	$(RM) -f *.f *.F *.F90 *.For *.f90 *.d *.$(MOD_SUFFIX) $(OBJS)
+ 
+ realclean:
+-	$(RM) -f *.f *.F *.F90 *.f90 *.d *.$(MOD_SUFFIX) $(OBJS) $(EXEC)
++	$(RM) -f *.f *.F *.F90 *.For *.f90 *.d *.$(MOD_SUFFIX) $(OBJS) $(EXEC)
+ 
+ #-------------------------------------------------------------------------------
+ # Build & include dependency files
+@@ -161,10 +159,10 @@ realclean:
+ %.d : %.F
+ 	@ echo "Building dependency for $@"
+ 	@ $(DEPGEN) -f $(INCS) $<  > $@
+-%.d : %.f
++%.d : %.F90
+ 	@ echo "Building dependency for $@"
+ 	@ $(DEPGEN) -f $(INCS) $<  > $@
+-%.d : %.F90
++%.d : %.For
+ 	@ echo "Building dependency for $@"
+ 	@ $(DEPGEN) -f $(INCS) $<  > $@
+ %.d : %.f90
+diff --git a/compset/CESM1_0_5-sole/compset.settings b/compset/CESM1_0_5-sole/compset.settings
+old mode 100644
+new mode 100755
+diff --git a/compset/CESM1_0_5-sole/coupler/cesm_coupling.cfg b/compset/CESM1_0_5-sole/coupler/cesm_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/CESM1_2_1-sole/compset.settings b/compset/CESM1_2_1-sole/compset.settings
+old mode 100644
+new mode 100755
+diff --git a/compset/CESM1_2_1-sole/coupler/cesm_coupling.cfg b/compset/CESM1_2_1-sole/coupler/cesm_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/CoLM-sole/compset.settings b/compset/CoLM-sole/compset.settings
+old mode 100644
+new mode 100755
+diff --git a/compset/CoLM-sole/coupler/colm_coupling.cfg b/compset/CoLM-sole/coupler/colm_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/CoLM-sole/coupler/colm_field_buf_register.cfg b/compset/CoLM-sole/coupler/colm_field_buf_register.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/CoLM-sole/coupler/comp_list.cfg b/compset/CoLM-sole/coupler/comp_list.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/CoLM-sole/coupler/cpl_grid_remap.cor b/compset/CoLM-sole/coupler/cpl_grid_remap.cor
+old mode 100644
+new mode 100755
+diff --git a/compset/CoLM-sole/coupler/shared_field_attribute.cfg b/compset/CoLM-sole/coupler/shared_field_attribute.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/compset.settings b/compset/FGOALS-gc-colm/compset.settings
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/atm_runtime_algorithms.cfg b/compset/FGOALS-gc-colm/coupler/atm_runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/atm_runtime_procedures.cfg b/compset/FGOALS-gc-colm/coupler/atm_runtime_procedures.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/c_coupler_coupling.cfg b/compset/FGOALS-gc-colm/coupler/c_coupler_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/cice_coupling.cfg b/compset/FGOALS-gc-colm/coupler/cice_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/colm_coupling.cfg b/compset/FGOALS-gc-colm/coupler/colm_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/comp_list.cfg b/compset/FGOALS-gc-colm/coupler/comp_list.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/cpl_grid_remap.cor b/compset/FGOALS-gc-colm/coupler/cpl_grid_remap.cor
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/cpl_runtime_procedures.cfg b/compset/FGOALS-gc-colm/coupler/cpl_runtime_procedures.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/gamil_coupling.cfg b/compset/FGOALS-gc-colm/coupler/gamil_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/ice_runtime_algorithms.cfg b/compset/FGOALS-gc-colm/coupler/ice_runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/ice_runtime_procedures.cfg b/compset/FGOALS-gc-colm/coupler/ice_runtime_procedures.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/licom_coupling.cfg b/compset/FGOALS-gc-colm/coupler/licom_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/lnd_runtime_algorithms.cfg b/compset/FGOALS-gc-colm/coupler/lnd_runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/lnd_runtime_procedures.cfg b/compset/FGOALS-gc-colm/coupler/lnd_runtime_procedures.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/ocn_runtime_algorithms.cfg b/compset/FGOALS-gc-colm/coupler/ocn_runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/ocn_runtime_procedures.cfg b/compset/FGOALS-gc-colm/coupler/ocn_runtime_procedures.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/averaging_algorithms/runtime_average_coupling_data.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/averaging_algorithms/runtime_average_coupling_data.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/averaging_algorithms/runtime_average_ocn_recv.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/averaging_algorithms/runtime_average_ocn_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/datamodel_algorithms/save_coupling_average_data.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/datamodel_algorithms/save_coupling_average_data.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/datamodel_algorithms/save_coupling_average_data_input.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/datamodel_algorithms/save_coupling_average_data_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/datamodel_algorithms/save_coupling_instantaneous_data.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/datamodel_algorithms/save_coupling_instantaneous_data.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/datamodel_algorithms/save_coupling_instantaneous_data_input.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/datamodel_algorithms/save_coupling_instantaneous_data_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/adjust_land_ocn_sice_fraction.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/adjust_land_ocn_sice_fraction.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_a2c.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_a2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_a2c_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_a2c_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_a2c_output_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_a2c_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2a.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2a.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2a_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2a_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2a_output_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2a_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2i.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2i.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2i_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2i_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2i_output_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2i_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2l.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2l.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2l_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2l_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2l_output_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2l_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2o.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2o.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2o_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2o_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2o_output_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_c2o_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_i2c.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_i2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_i2c_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_i2c_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_i2c_output_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_i2c_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_init.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_init.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_input.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_l2c.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_l2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_l2c_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_l2c_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_l2c_output_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_l2c_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_o2c.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_o2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_o2c_in_kernel.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_o2c_in_kernel.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_o2c_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_o2c_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_o2c_output_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_o2c_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_output.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_r2c.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_r2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_r2c_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_r2c_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_r2c_output_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/areafact_r2c_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/cal_orb_params.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/cal_orb_params.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/cal_orb_params_input.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/cal_orb_params_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/cal_orb_params_output.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/cal_orb_params_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/diag_dodiag.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/diag_dodiag.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/diag_dodiag_input.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/diag_dodiag_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/diag_dodiag_output.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/diag_dodiag_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/diag_solar.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/diag_solar.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/diag_solar_input.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/diag_solar_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/diag_solar_output.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/diag_solar_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_albi.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_albi.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_albi_1.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_albi_1.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_albi_1_output.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_albi_1_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_albi_input.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_albi_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_albi_output.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_albi_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_albo.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_albo.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_albo_input.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_albo_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_albo_output.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_albo_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_atmOcn.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_atmOcn.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_atmOcn_input.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_atmOcn_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_atmOcn_output.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_atmOcn_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_comp_rain.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_comp_rain.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_comp_rain_input.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_comp_rain_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_comp_rain_output.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_comp_rain_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_comp_snow.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_comp_snow.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_comp_snow_input.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_comp_snow_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_comp_snow_output.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_comp_snow_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_epbal.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_epbal.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_epbal_input.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_epbal_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_epbal_output.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_epbal_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_solar.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_solar.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_solar_input.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_solar_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_solar_output.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/flux_solar_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/frac_init_input.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/frac_init_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/frac_init_input_step1.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/frac_init_input_step1.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/frac_init_output.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/frac_init_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/frac_init_output_step1.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/frac_init_output_step1.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/frac_init_step1.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/frac_init_step1.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/frac_init_step2.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/frac_init_step2.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/frac_set_input.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/frac_set_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/frac_set_output.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/frac_set_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/frac_set_step1.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/frac_set_step1.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/frac_set_step2.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/frac_set_step2.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/get_initial_surface_data_from_coupler.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/get_initial_surface_data_from_coupler.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/map_npfix.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/map_npfix.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/map_npfix_input.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/map_npfix_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/map_npfix_output.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/map_npfix_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/merge_atm.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/merge_atm.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/merge_atm_input.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/merge_atm_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/merge_atm_output.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/merge_atm_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/merge_ocn.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/merge_ocn.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/merge_ocn_input.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/merge_ocn_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/merge_ocn_output.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/merge_ocn_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_coupler.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_coupler.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/frac_init_remap.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/frac_init_remap.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/frac_init_remap_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/frac_init_remap_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/frac_init_remap_output_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/frac_init_remap_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/frac_set_remap.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/frac_set_remap.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/frac_set_remap_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/frac_set_remap_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/frac_set_remap_output_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/frac_set_remap_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Fa2c.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Fa2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Fa2c_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Fa2c_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Sa2c.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Sa2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Sa2c_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Sa2c_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Xr2c.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Xr2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Xr2c_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Xr2c_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Fi2c.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Fi2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Fi2c_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Fi2c_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Fo2c.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Fo2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Fo2c_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Fo2c_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Si2c.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Si2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Si2c_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Si2c_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_So2c.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_So2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_So2c_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_So2c_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_aoflux.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_aoflux.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_aoflux_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_aoflux_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_oalbedo.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_oalbedo.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_oalbedo_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_oalbedo_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_precip.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_precip.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_precip_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/remap_algorithms/runtime_remap_precip_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_2D_send.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_2D_send_init.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_2D_send_init.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_areac_send.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_areac_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_field_areac.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_field_areac.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_output_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_output_fields_init.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_output_fields_init.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_c2a_2D_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_c2a_2D_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_c2a_2D_input_fields_init.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_c2a_2D_input_fields_init.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_c2a_2D_recv.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_c2a_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_c2a_2D_recv_init.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_c2a_2D_recv_init.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_a2c_2D_recv.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_a2c_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_a2c_areac_recv.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_a2c_areac_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_a2c_field_areac.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_a2c_field_areac.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_a2c_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_a2c_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2a_2D_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2a_2D_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2a_2D_send.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2a_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2i_2D_send.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2i_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2i_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2i_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2l_2D_send.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2l_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2l_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2l_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2lg_2D_send.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2lg_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2lg_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2lg_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2o_2D_send_in_kernel.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2o_2D_send_in_kernel.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2o_output_fields_in_kernel.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2o_output_fields_in_kernel.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2o_output_info_in_kernel.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2o_output_info_in_kernel.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2o_scalar_send_in_kernel.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2o_scalar_send_in_kernel.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_i2c_2D_recv.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_i2c_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_i2c_areac_recv.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_i2c_areac_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_i2c_field_areac.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_i2c_field_areac.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_i2c_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_i2c_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_l2c_2D_recv.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_l2c_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_l2c_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_l2c_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_2D_recv.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_2D_recv_in_kernel.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_2D_recv_in_kernel.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_areac_recv.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_areac_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_field_areac.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_field_areac.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_input_fields_in_kernel.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_input_fields_in_kernel.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_input_info.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_input_info.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_input_info_in_kernel.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_input_info_in_kernel.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_scalar_recv.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_scalar_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_scalar_recv_in_kernel.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_scalar_recv_in_kernel.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_r2c_areac_recv.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_r2c_areac_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_r2c_field_areac.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_r2c_field_areac.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_c2i_2D_recv.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_c2i_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_c2i_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_c2i_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_i2c_2D_send.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_i2c_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_i2c_areac_send.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_i2c_areac_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_i2c_field_areac.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_i2c_field_areac.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_i2c_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_i2c_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2l_2D_recv_all.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2l_2D_recv_all.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2l_2D_recv_first.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2l_2D_recv_first.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2l_input_fields_all.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2l_input_fields_all.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2l_input_fields_first.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2l_input_fields_first.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2lg_2D_recv.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2lg_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2lg_input_full_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2lg_input_full_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2c_2D_send.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2c_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2c_2D_send_albedo.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2c_2D_send_albedo.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2c_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2c_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2c_input_fields_albedo.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2c_input_fields_albedo.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_r2c_areac_send.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_r2c_areac_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_r2c_field_areac.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_r2c_field_areac.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_c2o_2D_recv.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_c2o_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_c2o_input_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_c2o_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_c2o_scalar_recv.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_c2o_scalar_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_o2c_2D_send.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_o2c_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_o2c_areac_send.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_o2c_areac_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_o2c_field_areac.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_o2c_field_areac.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_o2c_scalar_send.cfg b/compset/FGOALS-gc-colm/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_o2c_scalar_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_remap1.cfg b/compset/FGOALS-gc-colm/coupler/runtime_remap1.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/runtime_remap1_fields.cfg b/compset/FGOALS-gc-colm/coupler/runtime_remap1_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/shared_field_attribute.cfg b/compset/FGOALS-gc-colm/coupler/shared_field_attribute.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc-colm/coupler/static_decomp.cfg b/compset/FGOALS-gc-colm/coupler/static_decomp.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/compset.settings b/compset/FGOALS-gc/compset.settings
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/atm_runtime_algorithms.cfg b/compset/FGOALS-gc/coupler/atm_runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/atm_runtime_procedures.cfg b/compset/FGOALS-gc/coupler/atm_runtime_procedures.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/c_coupler_coupling.cfg b/compset/FGOALS-gc/coupler/c_coupler_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/cice_coupling.cfg b/compset/FGOALS-gc/coupler/cice_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/clm_coupling.cfg b/compset/FGOALS-gc/coupler/clm_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/cpl_grid_remap.cor b/compset/FGOALS-gc/coupler/cpl_grid_remap.cor
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/cpl_runtime_procedures.cfg b/compset/FGOALS-gc/coupler/cpl_runtime_procedures.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/gamil_coupling.cfg b/compset/FGOALS-gc/coupler/gamil_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/ice_runtime_algorithms.cfg b/compset/FGOALS-gc/coupler/ice_runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/ice_runtime_procedures.cfg b/compset/FGOALS-gc/coupler/ice_runtime_procedures.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/licom_coupling.cfg b/compset/FGOALS-gc/coupler/licom_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/lnd_runtime_algorithms.cfg b/compset/FGOALS-gc/coupler/lnd_runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/lnd_runtime_procedures.cfg b/compset/FGOALS-gc/coupler/lnd_runtime_procedures.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/ocn_runtime_algorithms.cfg b/compset/FGOALS-gc/coupler/ocn_runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/ocn_runtime_procedures.cfg b/compset/FGOALS-gc/coupler/ocn_runtime_procedures.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/averaging_algorithms/runtime_average_coupling_data.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/averaging_algorithms/runtime_average_coupling_data.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/averaging_algorithms/runtime_average_ocn_recv.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/averaging_algorithms/runtime_average_ocn_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/datamodel_algorithms/save_coupling_average_data.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/datamodel_algorithms/save_coupling_average_data.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/datamodel_algorithms/save_coupling_average_data_input.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/datamodel_algorithms/save_coupling_average_data_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/datamodel_algorithms/save_coupling_instantaneous_data.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/datamodel_algorithms/save_coupling_instantaneous_data.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/datamodel_algorithms/save_coupling_instantaneous_data_input.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/datamodel_algorithms/save_coupling_instantaneous_data_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/adjust_land_ocn_sice_fraction.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/adjust_land_ocn_sice_fraction.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_a2c.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_a2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_a2c_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_a2c_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_a2c_output_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_a2c_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2a.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2a.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2a_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2a_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2a_output_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2a_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2i.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2i.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2i_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2i_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2i_output_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2i_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2l.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2l.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2l_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2l_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2l_output_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2l_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2o.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2o.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2o_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2o_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2o_output_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_c2o_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_i2c.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_i2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_i2c_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_i2c_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_i2c_output_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_i2c_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_init.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_init.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_input.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_l2c.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_l2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_l2c_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_l2c_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_l2c_output_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_l2c_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_o2c.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_o2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_o2c_in_kernel.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_o2c_in_kernel.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_o2c_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_o2c_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_o2c_output_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_o2c_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_output.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_r2c.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_r2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_r2c_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_r2c_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_r2c_output_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/areafact_r2c_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/cal_orb_params.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/cal_orb_params.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/cal_orb_params_input.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/cal_orb_params_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/cal_orb_params_output.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/cal_orb_params_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/diag_dodiag.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/diag_dodiag.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/diag_dodiag_input.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/diag_dodiag_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/diag_dodiag_output.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/diag_dodiag_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/diag_solar.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/diag_solar.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/diag_solar_input.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/diag_solar_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/diag_solar_output.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/diag_solar_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_albi.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_albi.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_albi_1.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_albi_1.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_albi_1_output.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_albi_1_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_albi_input.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_albi_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_albi_output.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_albi_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_albo.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_albo.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_albo_input.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_albo_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_albo_output.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_albo_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_atmOcn.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_atmOcn.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_atmOcn_input.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_atmOcn_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_atmOcn_output.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_atmOcn_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_comp_rain.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_comp_rain.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_comp_rain_input.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_comp_rain_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_comp_rain_output.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_comp_rain_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_comp_snow.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_comp_snow.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_comp_snow_input.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_comp_snow_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_comp_snow_output.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_comp_snow_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_epbal.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_epbal.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_epbal_input.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_epbal_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_epbal_output.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_epbal_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_solar.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_solar.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_solar_input.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_solar_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_solar_output.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/flux_solar_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/frac_init_input.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/frac_init_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/frac_init_input_step1.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/frac_init_input_step1.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/frac_init_output.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/frac_init_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/frac_init_output_step1.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/frac_init_output_step1.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/frac_init_step1.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/frac_init_step1.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/frac_init_step2.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/frac_init_step2.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/frac_set_input.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/frac_set_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/frac_set_output.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/frac_set_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/frac_set_step1.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/frac_set_step1.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/frac_set_step2.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/frac_set_step2.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/get_initial_surface_data_from_coupler.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/get_initial_surface_data_from_coupler.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/map_npfix.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/map_npfix.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/map_npfix_input.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/map_npfix_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/map_npfix_output.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/map_npfix_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/merge_atm.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/merge_atm.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/merge_atm_input.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/merge_atm_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/merge_atm_output.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/merge_atm_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/merge_ocn.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/merge_ocn.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/merge_ocn_input.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/merge_ocn_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/merge_ocn_output.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/merge_ocn_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_coupler.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_coupler.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/frac_init_remap.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/frac_init_remap.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/frac_init_remap_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/frac_init_remap_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/frac_init_remap_output_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/frac_init_remap_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/frac_set_remap.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/frac_set_remap.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/frac_set_remap_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/frac_set_remap_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/frac_set_remap_output_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/frac_set_remap_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Fa2c.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Fa2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Fa2c_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Fa2c_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Sa2c.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Sa2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Sa2c_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Sa2c_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Xr2c.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Xr2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Xr2c_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_Xr2c_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Fi2c.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Fi2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Fi2c_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Fi2c_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Fo2c.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Fo2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Fo2c_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Fo2c_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Si2c.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Si2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Si2c_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_Si2c_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_So2c.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_So2c.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_So2c_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_So2c_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_aoflux.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_aoflux.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_aoflux_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_aoflux_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_oalbedo.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_oalbedo.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_oalbedo_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_bun_oalbedo_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_precip.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_precip.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_precip_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/remap_algorithms/runtime_remap_precip_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_2D_send.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_2D_send_init.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_2D_send_init.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_areac_send.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_areac_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_field_areac.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_field_areac.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_output_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_output_fields_init.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2c_output_fields_init.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_c2a_2D_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_c2a_2D_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_c2a_2D_input_fields_init.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_c2a_2D_input_fields_init.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_c2a_2D_recv.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_c2a_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_c2a_2D_recv_init.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_c2a_2D_recv_init.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_a2c_2D_recv.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_a2c_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_a2c_areac_recv.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_a2c_areac_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_a2c_field_areac.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_a2c_field_areac.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_a2c_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_a2c_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2a_2D_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2a_2D_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2a_2D_send.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2a_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2i_2D_send.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2i_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2i_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2i_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2l_2D_send.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2l_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2l_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2l_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2lg_2D_send.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2lg_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2lg_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2lg_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2o_2D_send_in_kernel.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2o_2D_send_in_kernel.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2o_output_fields_in_kernel.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2o_output_fields_in_kernel.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2o_output_info_in_kernel.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2o_output_info_in_kernel.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2o_scalar_send_in_kernel.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_c2o_scalar_send_in_kernel.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_i2c_2D_recv.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_i2c_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_i2c_areac_recv.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_i2c_areac_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_i2c_field_areac.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_i2c_field_areac.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_i2c_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_i2c_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_l2c_2D_recv.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_l2c_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_l2c_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_l2c_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_2D_recv.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_2D_recv_in_kernel.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_2D_recv_in_kernel.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_areac_recv.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_areac_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_field_areac.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_field_areac.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_input_fields_in_kernel.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_input_fields_in_kernel.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_input_info.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_input_info.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_input_info_in_kernel.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_input_info_in_kernel.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_scalar_recv.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_scalar_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_scalar_recv_in_kernel.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_o2c_scalar_recv_in_kernel.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_r2c_areac_recv.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_r2c_areac_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_r2c_field_areac.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_cpl_r2c_field_areac.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_c2i_2D_recv.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_c2i_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_c2i_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_c2i_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_i2c_2D_send.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_i2c_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_i2c_areac_send.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_i2c_areac_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_i2c_field_areac.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_i2c_field_areac.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_i2c_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ice_i2c_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2l_2D_recv_all.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2l_2D_recv_all.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2l_2D_recv_first.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2l_2D_recv_first.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2l_input_fields_all.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2l_input_fields_all.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2l_input_fields_first.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2l_input_fields_first.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2lg_2D_recv.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2lg_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2lg_input_full_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_c2lg_input_full_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2c_2D_send.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2c_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2c_2D_send_albedo.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2c_2D_send_albedo.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2c_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2c_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2c_input_fields_albedo.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2c_input_fields_albedo.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_r2c_areac_send.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_r2c_areac_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_r2c_field_areac.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_r2c_field_areac.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_c2o_2D_recv.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_c2o_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_c2o_input_fields.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_c2o_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_c2o_scalar_recv.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_c2o_scalar_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_o2c_2D_send.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_o2c_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_o2c_areac_send.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_o2c_areac_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_o2c_field_areac.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_o2c_field_areac.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_o2c_scalar_send.cfg b/compset/FGOALS-gc/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_ocn_o2c_scalar_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_remap1.cfg b/compset/FGOALS-gc/coupler/runtime_remap1.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/runtime_remap1_fields.cfg b/compset/FGOALS-gc/coupler/runtime_remap1_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/shared_field_attribute.cfg b/compset/FGOALS-gc/coupler/shared_field_attribute.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/FGOALS-gc/coupler/static_decomp.cfg b/compset/FGOALS-gc/coupler/static_decomp.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/compset.settings b/compset/GAMIL-CoLM/compset.settings
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/colm_coupling.cfg b/compset/GAMIL-CoLM/coupler/colm_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/comp_list.cfg b/compset/GAMIL-CoLM/coupler/comp_list.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/cpl_grid_remap.cor b/compset/GAMIL-CoLM/coupler/cpl_grid_remap.cor
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/gamil_coupling.cfg b/compset/GAMIL-CoLM/coupler/gamil_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/gamil_runtime_algorithms.cfg b/compset/GAMIL-CoLM/coupler/gamil_runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/gamil_static_prodedures.cfg b/compset/GAMIL-CoLM/coupler/gamil_static_prodedures.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/lnd_runtime_algorithms.cfg b/compset/GAMIL-CoLM/coupler/lnd_runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/lnd_runtime_procedures.cfg b/compset/GAMIL-CoLM/coupler/lnd_runtime_procedures.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/calculate_ocn_albedo.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/calculate_ocn_albedo.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/calculate_sice_albedo.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/calculate_sice_albedo.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/get_forcing_data_sice.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/get_forcing_data_sice.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/get_forcing_data_sst.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/get_forcing_data_sst.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/get_initial_surface_data_from_coupler.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/get_initial_surface_data_from_coupler.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/initialize_data_ocn.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/initialize_data_ocn.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/initialize_data_sice.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/initialize_data_sice.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/initialize_online_lsm.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/initialize_online_lsm.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/merge_lnd_surface_to_atm.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/merge_lnd_surface_to_atm.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/merge_lnd_surface_to_atm_input.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/merge_lnd_surface_to_atm_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/merge_lnd_surface_to_atm_output.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/merge_lnd_surface_to_atm_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/merge_ts.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/merge_ts.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_coupler.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_coupler.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_forcing_data_sice.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_forcing_data_sice.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_forcing_data_sst.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_forcing_data_sst.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_online_lsm.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_online_lsm.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/reset_gamil_surface_data.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/reset_gamil_surface_data.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/reset_gamil_surface_data_output.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/reset_gamil_surface_data_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/srfflx_state_reset.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/srfflx_state_reset.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/update_srf_fractions.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/normal_algorithms/update_srf_fractions.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2l_2D_send.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2l_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2l_areac_send.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2l_areac_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2l_field_areac.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2l_field_areac.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2l_output_fields.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2l_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_l2a_2D_input_fields.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_l2a_2D_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_l2a_2D_recv.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_l2a_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_a2l_2D_recv.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_a2l_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_a2l_input_fields.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_a2l_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_a2lg_2D_recv.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_a2lg_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_a2lg_input_full_fields.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_a2lg_input_full_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2a_2D_send.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2a_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2a_2D_send_albedo.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2a_2D_send_albedo.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2a_input_fields.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2a_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2a_input_fields_albedo.cfg b/compset/GAMIL-CoLM/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2a_input_fields_albedo.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL-CoLM/coupler/shared_field_attribute.cfg b/compset/GAMIL-CoLM/coupler/shared_field_attribute.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/compset.settings b/compset/GAMIL2-CLM3/compset.settings
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/clm_coupling.cfg b/compset/GAMIL2-CLM3/coupler/clm_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/comp_list.cfg b/compset/GAMIL2-CLM3/coupler/comp_list.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/cpl_grid_remap.cor b/compset/GAMIL2-CLM3/coupler/cpl_grid_remap.cor
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/gamil_coupling.cfg b/compset/GAMIL2-CLM3/coupler/gamil_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/gamil_runtime_algorithms.cfg b/compset/GAMIL2-CLM3/coupler/gamil_runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/gamil_static_prodedures.cfg b/compset/GAMIL2-CLM3/coupler/gamil_static_prodedures.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/lnd_runtime_algorithms.cfg b/compset/GAMIL2-CLM3/coupler/lnd_runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/lnd_runtime_procedures.cfg b/compset/GAMIL2-CLM3/coupler/lnd_runtime_procedures.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/calculate_ocn_albedo.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/calculate_ocn_albedo.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/calculate_sice_albedo.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/calculate_sice_albedo.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/get_forcing_data_sice.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/get_forcing_data_sice.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/get_forcing_data_sst.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/get_forcing_data_sst.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/get_initial_surface_data_from_coupler.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/get_initial_surface_data_from_coupler.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/initialize_data_ocn.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/initialize_data_ocn.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/initialize_data_sice.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/initialize_data_sice.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/initialize_online_lsm.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/initialize_online_lsm.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/merge_lnd_surface_to_atm.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/merge_lnd_surface_to_atm.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/merge_lnd_surface_to_atm_input.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/merge_lnd_surface_to_atm_input.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/merge_lnd_surface_to_atm_output.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/merge_lnd_surface_to_atm_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/merge_ts.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/merge_ts.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_coupler.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_coupler.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_forcing_data_sice.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_forcing_data_sice.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_forcing_data_sst.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_forcing_data_sst.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_online_lsm.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_online_lsm.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/reset_gamil_surface_data.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/reset_gamil_surface_data.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/reset_gamil_surface_data_output.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/reset_gamil_surface_data_output.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/srfflx_state_reset.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/srfflx_state_reset.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/update_srf_fractions.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/normal_algorithms/update_srf_fractions.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2l_2D_send.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2l_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2l_areac_send.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2l_areac_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2l_field_areac.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2l_field_areac.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2l_output_fields.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_a2l_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_l2a_2D_input_fields.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_l2a_2D_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_l2a_2D_recv.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_atm_l2a_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_a2l_2D_recv.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_a2l_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_a2l_input_fields.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_a2l_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_a2lg_2D_recv.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_a2lg_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_a2lg_input_full_fields.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_a2lg_input_full_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2a_2D_send.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2a_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2a_2D_send_albedo.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2a_2D_send_albedo.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2a_input_fields.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2a_input_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2a_input_fields_albedo.cfg b/compset/GAMIL2-CLM3/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_lnd_l2a_input_fields_albedo.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-CLM3/coupler/shared_field_attribute.cfg b/compset/GAMIL2-CLM3/coupler/shared_field_attribute.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-sole/compset.settings b/compset/GAMIL2-sole/compset.settings
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-sole/coupler/comp_list.cfg b/compset/GAMIL2-sole/coupler/comp_list.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-sole/coupler/cpl_grid_remap.cor b/compset/GAMIL2-sole/coupler/cpl_grid_remap.cor
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-sole/coupler/gamil_coupling.cfg b/compset/GAMIL2-sole/coupler/gamil_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-sole/coupler/gamil_private_field_attribute.cfg b/compset/GAMIL2-sole/coupler/gamil_private_field_attribute.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-sole/coupler/gamil_runtime_algorithms.cfg b/compset/GAMIL2-sole/coupler/gamil_runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-sole/coupler/gamil_static_prodedures.cfg b/compset/GAMIL2-sole/coupler/gamil_static_prodedures.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/calculate_ocn_albedo.cfg b/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/calculate_ocn_albedo.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/calculate_sice_albedo.cfg b/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/calculate_sice_albedo.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/get_forcing_data_sice.cfg b/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/get_forcing_data_sice.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/get_forcing_data_sst.cfg b/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/get_forcing_data_sst.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/initialize_data_ocn.cfg b/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/initialize_data_ocn.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/initialize_data_sice.cfg b/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/initialize_data_sice.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/initialize_online_lsm.cfg b/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/initialize_online_lsm.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/merge_ts.cfg b/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/merge_ts.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_forcing_data_sice.cfg b/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_forcing_data_sice.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_forcing_data_sst.cfg b/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_forcing_data_sst.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_online_lsm.cfg b/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/process_surface_data_with_online_lsm.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/srfflx_state_reset.cfg b/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/srfflx_state_reset.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/update_srf_fractions.cfg b/compset/GAMIL2-sole/coupler/runtime_algorithms/normal_algorithms/update_srf_fractions.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/GAMIL2-sole/coupler/shared_field_attribute.cfg b/compset/GAMIL2-sole/coupler/shared_field_attribute.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-POM_FIO2/compset.settings b/compset/MASNUM2-POM_FIO2/compset.settings
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-POM_FIO2/coupler/masnum2_pomfio2_3D_bilinear_linear_read_wgts.cor b/compset/MASNUM2-POM_FIO2/coupler/masnum2_pomfio2_3D_bilinear_linear_read_wgts.cor
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-POM_FIO2/coupler/masnum_coupling.cfg b/compset/MASNUM2-POM_FIO2/coupler/masnum_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-POM_FIO2/coupler/masnum_runtime_algorithms.cfg b/compset/MASNUM2-POM_FIO2/coupler/masnum_runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-POM_FIO2/coupler/masnum_runtime_procedure.cfg b/compset/MASNUM2-POM_FIO2/coupler/masnum_runtime_procedure.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-POM_FIO2/coupler/pom_coupling.cfg b/compset/MASNUM2-POM_FIO2/coupler/pom_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-POM_FIO2/coupler/pom_masnum_grid_decomp.cfg b/compset/MASNUM2-POM_FIO2/coupler/pom_masnum_grid_decomp.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-POM_FIO2/coupler/pom_runtime_algorithms.cfg b/compset/MASNUM2-POM_FIO2/coupler/pom_runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-POM_FIO2/coupler/pom_runtime_procedure.cfg b/compset/MASNUM2-POM_FIO2/coupler/pom_runtime_procedure.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-POM_FIO2/coupler/runtime_algorithms/averaging_algorithms/runtime_average_masnum_output_fields.cfg b/compset/MASNUM2-POM_FIO2/coupler/runtime_algorithms/averaging_algorithms/runtime_average_masnum_output_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-POM_FIO2/coupler/runtime_algorithms/normal_algorithms/read_wind_data_from_file.cfg b/compset/MASNUM2-POM_FIO2/coupler/runtime_algorithms/normal_algorithms/read_wind_data_from_file.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-POM_FIO2/coupler/runtime_algorithms/normal_algorithms/time_linear_remap_wind_data.cfg b/compset/MASNUM2-POM_FIO2/coupler/runtime_algorithms/normal_algorithms/time_linear_remap_wind_data.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-POM_FIO2/coupler/runtime_algorithms/remap_algorithms/input_bv_field.cfg b/compset/MASNUM2-POM_FIO2/coupler/runtime_algorithms/remap_algorithms/input_bv_field.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-POM_FIO2/coupler/runtime_algorithms/remap_algorithms/output_bv_field.cfg b/compset/MASNUM2-POM_FIO2/coupler/runtime_algorithms/remap_algorithms/output_bv_field.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-POM_FIO2/coupler/runtime_algorithms/remap_algorithms/runtime_remap_wave_to_pom_3D.cfg b/compset/MASNUM2-POM_FIO2/coupler/runtime_algorithms/remap_algorithms/runtime_remap_wave_to_pom_3D.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-POM_FIO2/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_masnum_masnum2pom_fields.cfg b/compset/MASNUM2-POM_FIO2/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_masnum_masnum2pom_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-POM_FIO2/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_masnum_masnum2pom_send.cfg b/compset/MASNUM2-POM_FIO2/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_masnum_masnum2pom_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-POM_FIO2/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_pom_masnum2pom_fields.cfg b/compset/MASNUM2-POM_FIO2/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_pom_masnum2pom_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-POM_FIO2/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_pom_masnum2pom_recv.cfg b/compset/MASNUM2-POM_FIO2/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_pom_masnum2pom_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-POM_FIO2/coupler/shared_field_attribute.cfg b/compset/MASNUM2-POM_FIO2/coupler/shared_field_attribute.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-sole/compset.settings b/compset/MASNUM2-sole/compset.settings
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-sole/coupler/comp_list.cfg b/compset/MASNUM2-sole/coupler/comp_list.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-sole/coupler/masnum2_pomfio2_3D_bilinear_linear_read_wgts.cor b/compset/MASNUM2-sole/coupler/masnum2_pomfio2_3D_bilinear_linear_read_wgts.cor
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-sole/coupler/masnum_coupling.cfg b/compset/MASNUM2-sole/coupler/masnum_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-sole/coupler/masnum_runtime_algorithms.cfg b/compset/MASNUM2-sole/coupler/masnum_runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-sole/coupler/masnum_runtime_procedure.cfg b/compset/MASNUM2-sole/coupler/masnum_runtime_procedure.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-sole/coupler/runtime_algorithms/normal_algorithms/read_wind_data_from_file.cfg b/compset/MASNUM2-sole/coupler/runtime_algorithms/normal_algorithms/read_wind_data_from_file.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-sole/coupler/runtime_algorithms/normal_algorithms/time_linear_remap_wind_data.cfg b/compset/MASNUM2-sole/coupler/runtime_algorithms/normal_algorithms/time_linear_remap_wind_data.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/MASNUM2-sole/coupler/shared_field_attribute.cfg b/compset/MASNUM2-sole/coupler/shared_field_attribute.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/POM_FIO2-sole/compset.settings b/compset/POM_FIO2-sole/compset.settings
+old mode 100644
+new mode 100755
+diff --git a/compset/POM_FIO2-sole/coupler/masnum2_pomfio2_3D_bilinear_linear_read_wgts.cor b/compset/POM_FIO2-sole/coupler/masnum2_pomfio2_3D_bilinear_linear_read_wgts.cor
+old mode 100644
+new mode 100755
+diff --git a/compset/POM_FIO2-sole/coupler/pom_coupling.cfg b/compset/POM_FIO2-sole/coupler/pom_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/POM_FIO2-sole/coupler/pom_runtime_procedure.cfg b/compset/POM_FIO2-sole/coupler/pom_runtime_procedure.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/POM_FIO2-sole/coupler/shared_field_attribute.cfg b/compset/POM_FIO2-sole/coupler/shared_field_attribute.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/WRF-sole/compset.settings b/compset/WRF-sole/compset.settings
+old mode 100644
+new mode 100755
+diff --git a/compset/masnum-pom/compset.settings b/compset/masnum-pom/compset.settings
+old mode 100644
+new mode 100755
+diff --git a/compset/masnum-pom/coupler/masnum_coupling.cfg b/compset/masnum-pom/coupler/masnum_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/masnum-pom/coupler/masnum_pom_3D_bilinear_linear_read_wgts.cor b/compset/masnum-pom/coupler/masnum_pom_3D_bilinear_linear_read_wgts.cor
+old mode 100644
+new mode 100755
+diff --git a/compset/masnum-pom/coupler/masnum_runtime_algorithms.cfg b/compset/masnum-pom/coupler/masnum_runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/masnum-pom/coupler/masnum_runtime_procedure.cfg b/compset/masnum-pom/coupler/masnum_runtime_procedure.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/masnum-pom/coupler/pom_coupling.cfg b/compset/masnum-pom/coupler/pom_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/masnum-pom/coupler/pom_runtime_algorithms.cfg b/compset/masnum-pom/coupler/pom_runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/masnum-pom/coupler/pom_runtime_procedure.cfg b/compset/masnum-pom/coupler/pom_runtime_procedure.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/masnum-pom/coupler/pom_wave_grid_decomp.cfg b/compset/masnum-pom/coupler/pom_wave_grid_decomp.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/masnum-pom/coupler/runtime_algorithms/normal_algorithms/calculate_flux_from_atm.cfg b/compset/masnum-pom/coupler/runtime_algorithms/normal_algorithms/calculate_flux_from_atm.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/masnum-pom/coupler/runtime_algorithms/normal_algorithms/get_wind_from_data_file.cfg b/compset/masnum-pom/coupler/runtime_algorithms/normal_algorithms/get_wind_from_data_file.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/masnum-pom/coupler/runtime_algorithms/normal_algorithms/read_atm_data_from_file.cfg b/compset/masnum-pom/coupler/runtime_algorithms/normal_algorithms/read_atm_data_from_file.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/masnum-pom/coupler/runtime_algorithms/normal_algorithms/rotate_wind_speed_arrays.cfg b/compset/masnum-pom/coupler/runtime_algorithms/normal_algorithms/rotate_wind_speed_arrays.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/masnum-pom/coupler/runtime_algorithms/normal_algorithms/verify_input_wind_speed.cfg b/compset/masnum-pom/coupler/runtime_algorithms/normal_algorithms/verify_input_wind_speed.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/masnum-pom/coupler/runtime_algorithms/remap_algorithms/input_bv_field.cfg b/compset/masnum-pom/coupler/runtime_algorithms/remap_algorithms/input_bv_field.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/masnum-pom/coupler/runtime_algorithms/remap_algorithms/output_bv_field.cfg b/compset/masnum-pom/coupler/runtime_algorithms/remap_algorithms/output_bv_field.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/masnum-pom/coupler/runtime_algorithms/remap_algorithms/runtime_remap_wave_to_pom_3D.cfg b/compset/masnum-pom/coupler/runtime_algorithms/remap_algorithms/runtime_remap_wave_to_pom_3D.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_masnum_send_fields.cfg b/compset/masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_masnum_send_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_masnum_wave2pom_2D_send.cfg b/compset/masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_masnum_wave2pom_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_pom_recv_fields.cfg b/compset/masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_pom_recv_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_pom_wave2pom_2D_recv.cfg b/compset/masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_pom_wave2pom_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/masnum-pom/coupler/shared_field_attribute.cfg b/compset/masnum-pom/coupler/shared_field_attribute.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/compset.settings b/compset/wrf-masnum-pom/compset.settings
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/masnum_coupling.cfg b/compset/wrf-masnum-pom/coupler/masnum_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/masnum_pom_3D_bilinear_linear_read_wgts.cor b/compset/wrf-masnum-pom/coupler/masnum_pom_3D_bilinear_linear_read_wgts.cor
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/masnum_runtime_algorithms.cfg b/compset/wrf-masnum-pom/coupler/masnum_runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/masnum_runtime_procedure.cfg b/compset/wrf-masnum-pom/coupler/masnum_runtime_procedure.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/masnum_wrf_grid_decomp.cfg b/compset/wrf-masnum-pom/coupler/masnum_wrf_grid_decomp.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/pom_coupling.cfg b/compset/wrf-masnum-pom/coupler/pom_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/pom_runtime_algorithms.cfg b/compset/wrf-masnum-pom/coupler/pom_runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/pom_runtime_procedure.cfg b/compset/wrf-masnum-pom/coupler/pom_runtime_procedure.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/pom_wave_grid_decomp.cfg b/compset/wrf-masnum-pom/coupler/pom_wave_grid_decomp.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/normal_algorithms/calculate_flux_from_atm.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/normal_algorithms/calculate_flux_from_atm.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/normal_algorithms/get_wind_from_data_file.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/normal_algorithms/get_wind_from_data_file.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/normal_algorithms/read_atm_data_from_file.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/normal_algorithms/read_atm_data_from_file.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/normal_algorithms/rotate_wind_speed_arrays.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/normal_algorithms/rotate_wind_speed_arrays.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/normal_algorithms/verify_input_wind_speed.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/normal_algorithms/verify_input_wind_speed.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/remap_algorithms/input_bv_field.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/remap_algorithms/input_bv_field.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/remap_algorithms/output_bv_field.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/remap_algorithms/output_bv_field.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/remap_algorithms/runtime_remap_wave_to_pom_3D.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/remap_algorithms/runtime_remap_wave_to_pom_3D.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/remap_algorithms/runtime_remap_wrf_to_pom.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/remap_algorithms/runtime_remap_wrf_to_pom.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/remap_algorithms/runtime_remap_wrf_to_wave.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/remap_algorithms/runtime_remap_wrf_to_wave.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/remap_algorithms/wrf_output_fiels.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/remap_algorithms/wrf_output_fiels.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/remap_algorithms/wrf_to_pom_output_fiels.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/remap_algorithms/wrf_to_pom_output_fiels.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_masnum_send_fields.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_masnum_send_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_masnum_wave2pom_2D_send.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_masnum_wave2pom_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_masnum_wrf2masnum_2D_recv.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_masnum_wrf2masnum_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_masnum_wrf2masnum_recv_fields.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_masnum_wrf2masnum_recv_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_pom_recv_fields.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_pom_recv_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_pom_wave2pom_2D_recv.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_pom_wave2pom_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_pom_wrf2pom_2D_recv.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_pom_wrf2pom_2D_recv.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_pom_wrf2pom_recv_fields.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_pom_wrf2pom_recv_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_wrf_wrf2masnum_2D_send.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_wrf_wrf2masnum_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_wrf_wrf2masnum_send_fields.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_wrf_wrf2masnum_send_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_wrf_wrf2pom_2D_send.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_wrf_wrf2pom_2D_send.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_wrf_wrf2pom_send_fields.cfg b/compset/wrf-masnum-pom/coupler/runtime_algorithms/transfer_algorithms/runtime_transfer_wrf_wrf2pom_send_fields.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/shared_field_attribute.cfg b/compset/wrf-masnum-pom/coupler/shared_field_attribute.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/wrf_coupling.cfg b/compset/wrf-masnum-pom/coupler/wrf_coupling.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/wrf_grid_remap.cor b/compset/wrf-masnum-pom/coupler/wrf_grid_remap.cor
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/wrf_runtime_algorithms.cfg b/compset/wrf-masnum-pom/coupler/wrf_runtime_algorithms.cfg
+old mode 100644
+new mode 100755
+diff --git a/compset/wrf-masnum-pom/coupler/wrf_runtime_procedure.cfg b/compset/wrf-masnum-pom/coupler/wrf_runtime_procedure.cfg
+old mode 100644
+new mode 100755
+diff --git a/cpl/c_coupler/compiler.cfg b/cpl/c_coupler/compiler.cfg
+old mode 100644
+new mode 100755
+diff --git a/cpl/c_coupler/field_buf_register.cfg b/cpl/c_coupler/field_buf_register.cfg
+old mode 100644
+new mode 100755
+diff --git a/lib/c_coupler/compiler.cfg b/lib/c_coupler/compiler.cfg
+old mode 100644
+new mode 100755
+diff --git a/lib/esmf/compiler.cfg b/lib/esmf/compiler.cfg
+old mode 100644
+new mode 100755
+diff --git a/lnd/CLM3/compiler.cfg b/lnd/CLM3/compiler.cfg
+old mode 100644
+new mode 100755
+diff --git a/lnd/CLM3/field_buf_register.cfg b/lnd/CLM3/field_buf_register.cfg
+old mode 100644
+new mode 100755
+diff --git a/lnd/CoLM/compiler.cfg b/lnd/CoLM/compiler.cfg
+old mode 100644
+new mode 100755
+diff --git a/lnd/CoLM/field_buf_register.cfg b/lnd/CoLM/field_buf_register.cfg
+old mode 100644
+new mode 100755
+diff --git a/lnd/colm4_beta/compiler.cfg b/lnd/colm4_beta/compiler.cfg
+old mode 100644
+new mode 100755
+diff --git a/lnd/colm4_beta/field_buf_register.cfg b/lnd/colm4_beta/field_buf_register.cfg
+old mode 100644
+new mode 100755
+diff --git a/ocn/LICOM2.0/compiler.cfg b/ocn/LICOM2.0/compiler.cfg
+old mode 100644
+new mode 100755
+diff --git a/ocn/LICOM2.0/field_buf_register.cfg b/ocn/LICOM2.0/field_buf_register.cfg
+old mode 100644
+new mode 100755
+diff --git a/ocn/POM_FIO2/compiler.cfg b/ocn/POM_FIO2/compiler.cfg
+old mode 100644
+new mode 100755
+diff --git a/ocn/POM_FIO2/field_buf_register.cfg b/ocn/POM_FIO2/field_buf_register.cfg
+old mode 100644
+new mode 100755
+diff --git a/ocn/pom/compiler.cfg b/ocn/pom/compiler.cfg
+old mode 100644
+new mode 100755
+diff --git a/ocn/pom/field_buf_register.cfg b/ocn/pom/field_buf_register.cfg
+old mode 100644
+new mode 100755
+diff --git a/sice/CICE_LASG_v1.0/compiler.cfg b/sice/CICE_LASG_v1.0/compiler.cfg
+old mode 100644
+new mode 100755
+diff --git a/sice/CICE_LASG_v1.0/field_buf_register.cfg b/sice/CICE_LASG_v1.0/field_buf_register.cfg
+old mode 100644
+new mode 100755
+diff --git a/wave/MASNUM2/compiler.cfg b/wave/MASNUM2/compiler.cfg
+old mode 100644
+new mode 100755
+diff --git a/wave/MASNUM2/field_buf_register.cfg b/wave/MASNUM2/field_buf_register.cfg
+old mode 100644
+new mode 100755
+diff --git a/wave/masnum/compiler.cfg b/wave/masnum/compiler.cfg
+old mode 100644
+new mode 100755
+diff --git a/wave/masnum/field_buf_register.cfg b/wave/masnum/field_buf_register.cfg
+old mode 100644
+new mode 100755

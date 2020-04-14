@@ -1,0 +1,85 @@
+mpiicpc -c -O2 -no-vec -fp-model precise -fp-speculation=safe -mp1 -zero -traceback -fPIC -DDEBUG_CCPL  -I. -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Data_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Parallel_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Runtime_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/XML -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Driver -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Utils -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/CoR -I/public1/home/sc31489/yuhao/course/demo_coupler/model_experiments/run/lib/c_coupler/src/individual_src_files/ -DLINUX  -I/public1/home/sc31489/yuhao/course/demo_coupler/model_experiments/run/lib/include -I/public1/soft/netcdf/4.4.1-parallel-icc18/include -I/public1/soft/intel/2017/compilers_and_libraries_2017.7.259/linux/mpi/intel64/include /public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Parallel_MGT/routing_info_mgt.cxx
+mpiicpc -c -O2 -no-vec -fp-model precise -fp-speculation=safe -mp1 -zero -traceback -fPIC -DDEBUG_CCPL  -I. -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Data_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Parallel_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Runtime_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/XML -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Driver -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Utils -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/CoR -I/public1/home/sc31489/yuhao/course/demo_coupler/model_experiments/run/lib/c_coupler/src/individual_src_files/ -DLINUX  -I/public1/home/sc31489/yuhao/course/demo_coupler/model_experiments/run/lib/include -I/public1/soft/netcdf/4.4.1-parallel-icc18/include -I/public1/soft/intel/2017/compilers_and_libraries_2017.7.259/linux/mpi/intel64/include /public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/CoR/runtime_remap_function.cxx
+mpiicpc -c -O2 -no-vec -fp-model precise -fp-speculation=safe -mp1 -zero -traceback -fPIC -DDEBUG_CCPL  -I. -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Data_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Parallel_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Runtime_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/XML -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Driver -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Utils -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/CoR -I/public1/home/sc31489/yuhao/course/demo_coupler/model_experiments/run/lib/c_coupler/src/individual_src_files/ -DLINUX  -I/public1/home/sc31489/yuhao/course/demo_coupler/model_experiments/run/lib/include -I/public1/soft/netcdf/4.4.1-parallel-icc18/include -I/public1/soft/intel/2017/compilers_and_libraries_2017.7.259/linux/mpi/intel64/include /public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Runtime_MGT/runtime_remapping_weights_mgt.cxx
+mpiicpc -c -O2 -no-vec -fp-model precise -fp-speculation=safe -mp1 -zero -traceback -fPIC -DDEBUG_CCPL  -I. -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Data_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Parallel_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Runtime_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/XML -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Driver -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Utils -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/CoR -I/public1/home/sc31489/yuhao/course/demo_coupler/model_experiments/run/lib/c_coupler/src/individual_src_files/ -DLINUX  -I/public1/home/sc31489/yuhao/course/demo_coupler/model_experiments/run/lib/include -I/public1/soft/netcdf/4.4.1-parallel-icc18/include -I/public1/soft/intel/2017/compilers_and_libraries_2017.7.259/linux/mpi/intel64/include /public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Runtime_MGT/runtime_trans_algorithm.cxx
+mpiicpc -c -O2 -no-vec -fp-model precise -fp-speculation=safe -mp1 -zero -traceback -fPIC -DDEBUG_CCPL  -I. -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Data_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Parallel_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Runtime_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/XML -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Driver -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Utils -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/CoR -I/public1/home/sc31489/yuhao/course/demo_coupler/model_experiments/run/lib/c_coupler/src/individual_src_files/ -DLINUX  -I/public1/home/sc31489/yuhao/course/demo_coupler/model_experiments/run/lib/include -I/public1/soft/netcdf/4.4.1-parallel-icc18/include -I/public1/soft/intel/2017/compilers_and_libraries_2017.7.259/linux/mpi/intel64/include /public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/CoR/syntax_check.cxx
+mpiicpc -c -O2 -no-vec -fp-model precise -fp-speculation=safe -mp1 -zero -traceback -fPIC -DDEBUG_CCPL  -I. -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Data_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Parallel_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Runtime_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/XML -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Driver -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Utils -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/CoR -I/public1/home/sc31489/yuhao/course/demo_coupler/model_experiments/run/lib/c_coupler/src/individual_src_files/ -DLINUX  -I/public1/home/sc31489/yuhao/course/demo_coupler/model_experiments/run/lib/include -I/public1/soft/netcdf/4.4.1-parallel-icc18/include -I/public1/soft/intel/2017/compilers_and_libraries_2017.7.259/linux/mpi/intel64/include /public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Driver/timer_mgt.cxx
+mpiicpc -c -O2 -no-vec -fp-model precise -fp-speculation=safe -mp1 -zero -traceback -fPIC -DDEBUG_CCPL  -I. -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Data_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Parallel_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Runtime_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/XML -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Driver -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Utils -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/CoR -I/public1/home/sc31489/yuhao/course/demo_coupler/model_experiments/run/lib/c_coupler/src/individual_src_files/ -DLINUX  -I/public1/home/sc31489/yuhao/course/demo_coupler/model_experiments/run/lib/include -I/public1/soft/netcdf/4.4.1-parallel-icc18/include -I/public1/soft/intel/2017/compilers_and_libraries_2017.7.259/linux/mpi/intel64/include /public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/XML/tinystr.cxx
+mpiicpc -c -O2 -no-vec -fp-model precise -fp-speculation=safe -mp1 -zero -traceback -fPIC -DDEBUG_CCPL  -I. -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Data_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Parallel_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Runtime_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/XML -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Driver -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Utils -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/CoR -I/public1/home/sc31489/yuhao/course/demo_coupler/model_experiments/run/lib/c_coupler/src/individual_src_files/ -DLINUX  -I/public1/home/sc31489/yuhao/course/demo_coupler/model_experiments/run/lib/include -I/public1/soft/netcdf/4.4.1-parallel-icc18/include -I/public1/soft/intel/2017/compilers_and_libraries_2017.7.259/linux/mpi/intel64/include /public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/XML/tinyxml.cxx
+mpiicpc -c -O2 -no-vec -fp-model precise -fp-speculation=safe -mp1 -zero -traceback -fPIC -DDEBUG_CCPL  -I. -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Data_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Parallel_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Runtime_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/XML -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Driver -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Utils -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/CoR -I/public1/home/sc31489/yuhao/course/demo_coupler/model_experiments/run/lib/c_coupler/src/individual_src_files/ -DLINUX  -I/public1/home/sc31489/yuhao/course/demo_coupler/model_experiments/run/lib/include -I/public1/soft/netcdf/4.4.1-parallel-icc18/include -I/public1/soft/intel/2017/compilers_and_libraries_2017.7.259/linux/mpi/intel64/include /public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/XML/tinyxmlerror.cxx
+mpiicpc -c -O2 -no-vec -fp-model precise -fp-speculation=safe -mp1 -zero -traceback -fPIC -DDEBUG_CCPL  -I. -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Data_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Parallel_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Runtime_MGT -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/XML -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Driver -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Utils -I/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/CoR -I/public1/home/sc31489/yuhao/course/demo_coupler/model_experiments/run/lib/c_coupler/src/individual_src_files/ -DLINUX  -I/public1/home/sc31489/yuhao/course/demo_coupler/model_experiments/run/lib/include -I/public1/soft/netcdf/4.4.1-parallel-icc18/include -I/public1/soft/intel/2017/compilers_and_libraries_2017.7.259/linux/mpi/intel64/include /public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/XML/tinyxmlparser.cxx
+/public1/home/sc31489/yuhao/course/demo_coupler/model_platform/models/libs/c_coupler/src/Driver/timer_mgt.cxx(658): warning #192: unrecognized character escape sequence
+      EXECUTION_REPORT(REPORT_ERROR, comp_id, time_step_in_second != -1, "Cannot advance the time of the component \"\%s\" at the model code with the annotation \"%s\", because the time step has not been specified.", 
+                                                                                                                     ^
+
+ar  rv /public1/home/sc31489/yuhao/course/demo_coupler/model_experiments/run/lib/c_coupler/exe/libc_coupler.a CCPL_api_mgt.o IO_field_mgt.o Runtime_Algorithm_Basis.o annotation_mgt.o c_coupler_interface_mod.o common_utils.o compset_communicators_info_mgt.o cor_cpl_interface.o cor_global_data.o coupling_generator.o coupling_interface.o decomp_grid_mgt.o decomp_info_mgt.o delaunay_voronoi.o ensemble_mgt.o execution_report.o field_info_mgt.o fields_gather_scatter_mgt.o global_data.o grid_cell_search.o inout_interface_mgt.o io_basis.o io_binary.o io_mgt.o io_netcdf.o memory_mgt.o original_grid_mgt.o performance_timing_mgt.o remap_common_utils.o remap_grid_class.o remap_grid_data_class.o remap_grid_data_mgt.o remap_grid_mgt.o remap_mgt.o remap_operator_1D_basis.o remap_operator_basis.o remap_operator_bilinear.o remap_operator_c_interface.o remap_operator_conserv_2D.o remap_operator_distwgt.o remap_operator_grid.o remap_operator_linear.o remap_operator_mgt.o remap_operator_regrid.o remap_operator_smooth.o remap_operator_spline_1D.o remap_parser.o remap_statement_operand.o remap_strategy_class.o remap_strategy_mgt.o remap_utils_nearest_points.o remap_weight_of_strategy_class.o remap_weight_of_strategy_mgt.o remap_weight_sparse_matrix.o remapping_configuration_mgt.o restart_mgt.o routing_info_mgt.o runtime_cumulate_average_algorithm.o runtime_datatype_transformer.o runtime_remap_algorithm.o runtime_remap_function.o runtime_remapping_weights_mgt.o runtime_trans_algorithm.o syntax_check.o timer_mgt.o tinystr.o tinyxml.o tinyxmlerror.o tinyxmlparser.o
+ar: creating /public1/home/sc31489/yuhao/course/demo_coupler/model_experiments/run/lib/c_coupler/exe/libc_coupler.a
+a - CCPL_api_mgt.o
+a - IO_field_mgt.o
+a - Runtime_Algorithm_Basis.o
+a - annotation_mgt.o
+a - c_coupler_interface_mod.o
+a - common_utils.o
+a - compset_communicators_info_mgt.o
+a - cor_cpl_interface.o
+a - cor_global_data.o
+a - coupling_generator.o
+a - coupling_interface.o
+a - decomp_grid_mgt.o
+a - decomp_info_mgt.o
+a - delaunay_voronoi.o
+a - ensemble_mgt.o
+a - execution_report.o
+a - field_info_mgt.o
+a - fields_gather_scatter_mgt.o
+a - global_data.o
+a - grid_cell_search.o
+a - inout_interface_mgt.o
+a - io_basis.o
+a - io_binary.o
+a - io_mgt.o
+a - io_netcdf.o
+a - memory_mgt.o
+a - original_grid_mgt.o
+a - performance_timing_mgt.o
+a - remap_common_utils.o
+a - remap_grid_class.o
+a - remap_grid_data_class.o
+a - remap_grid_data_mgt.o
+a - remap_grid_mgt.o
+a - remap_mgt.o
+a - remap_operator_1D_basis.o
+a - remap_operator_basis.o
+a - remap_operator_bilinear.o
+a - remap_operator_c_interface.o
+a - remap_operator_conserv_2D.o
+a - remap_operator_distwgt.o
+a - remap_operator_grid.o
+a - remap_operator_linear.o
+a - remap_operator_mgt.o
+a - remap_operator_regrid.o
+a - remap_operator_smooth.o
+a - remap_operator_spline_1D.o
+a - remap_parser.o
+a - remap_statement_operand.o
+a - remap_strategy_class.o
+a - remap_strategy_mgt.o
+a - remap_utils_nearest_points.o
+a - remap_weight_of_strategy_class.o
+a - remap_weight_of_strategy_mgt.o
+a - remap_weight_sparse_matrix.o
+a - remapping_configuration_mgt.o
+a - restart_mgt.o
+a - routing_info_mgt.o
+a - runtime_cumulate_average_algorithm.o
+a - runtime_datatype_transformer.o
+a - runtime_remap_algorithm.o
+a - runtime_remap_function.o
+a - runtime_remapping_weights_mgt.o
+a - runtime_trans_algorithm.o
+a - syntax_check.o
+a - timer_mgt.o
+a - tinystr.o
+a - tinyxml.o
+a - tinyxmlerror.o
+a - tinyxmlparser.o

@@ -1,0 +1,1029 @@
+diff --git a/coupling_atm_model_mod.f90 b/coupling_atm_model_mod.f90
+old mode 100644
+new mode 100755
+index cee664f..9385152
+--- a/coupling_atm_model_mod.f90
++++ b/coupling_atm_model_mod.f90
+@@ -1,12 +1,11 @@
+ module coupling_atm_model_mod
+ 
+-    integer :: ocn_demo_comp_id
+-
+     use CCPL_interface_mod
+ 
+     implicit none
+ 
+     integer, public             :: ocn_demo_comp_id
++    integer, private            :: decomp_id, grid_h2d_id
+     
+ contains
+ 
+@@ -21,15 +20,50 @@ contains
+         use CCPL_interface_mod
+         use spmd_init_mod, only:mytask_id, npes
+         use parse_namelist_mod,only:time_step, coupling_freq
+-        use grid_init_mod, only:latlen, lonlen
++        use grid_init_mod, only:latlen, lonlen, lon, lat
+         use decomp_init_mod, only:decomp_size, local_grid_cell_index
+-        use variable_mod
++        use variable_mod, only:sstm, shfm, sshm, mldm, mask, psl,prect,flds,fsds
+ 
+         implicit none
+ 
+-        grid_h2d_id = CCPL_register_H2D_grid_via_global_data(ocn_demo_comp_id, "ocn_demo_H2D_grid", "LON_LAT", "degrees", "cyclic", lonlen, latlen, 0.0, 360.0, -90.0, 90.0, lon, lat, annotation="register gamil H2D grid ")
+-        decomp_id = CCPL_register_normal_parallel_decomp("decomp_ocn_demo_grid", grid_H2D_id, decomp_size, local_grid_cell_index(:,local_id+1), &
+-                    annotation="allocate for gamil grid")
++        integer          :: export_interface_id, import_interface_id
++        integer          :: timer_id, fields_id(5)
++        integer          :: field_id_psl, field_id_prect, field_id_flds, field_id_fsds
++        integer          :: field_id_sst, field_id_ssh, field_id_shf, field_id_mld
++
++        call CCPL_set_normal_time_step(ocn_demo_comp_id, time_step, annotation="setting the time step for ocn_demo")
++
++        grid_h2d_id = CCPL_register_H2D_grid_via_global_data(ocn_demo_comp_id, "ocn_demo_H2D_grid", "LON_LAT", "degrees", "cyclic", lonlen, latlen, 0.0, 360.0, -90.0, 90.0, lon, lat, mask, annotation="register ocn_demo H2D grid ")
++        decomp_id = CCPL_register_normal_parallel_decomp("decomp_ocn_demo_grid", grid_H2D_id, decomp_size, local_grid_cell_index, annotation="allocate decomp for ocn_demo grid")
++
++        !------------register field instances to C-Coupler2--------------
++
++        field_id_psl = CCPL_register_field_instance(psl(1:decomp_size), "psl", decomp_id, grid_h2d_id, 0, usage_tag=CCPL_TAG_CPL_REST, field_unit="Pa", annotation="register field instance of Sea level pressure") 
++        field_id_prect = CCPL_register_field_instance(prect(1:decomp_size), "prect", decomp_id, grid_h2d_id, 0, usage_tag=CCPL_TAG_CPL_REST, field_unit="m/s", annotation="register field instance of precipitation")
++        field_id_fsds = CCPL_register_field_instance(fsds(1:decomp_size), "fsds", decomp_id, grid_h2d_id, 0, usage_tag=CCPL_TAG_CPL_REST, field_unit="W/m2", annotation="register field instance of Short wave downward flux at surface")
++        field_id_flds  = CCPL_register_field_instance(flds(1:decomp_size), "flds", decomp_id, grid_h2d_id, 0, usage_tag=CCPL_TAG_CPL_REST, field_unit="W/m2", annotation="register field instance of Long wave downward flux at surface")
++        field_id_sst  = CCPL_register_field_instance(sstm, "sst", decomp_id, grid_h2d_id, 0, usage_tag=CCPL_TAG_CPL_REST, field_unit="C", annotation="register field instance of Sea surface temperature")
++        field_id_shf  = CCPL_register_field_instance(shfm, "shf", decomp_id, grid_h2d_id, 0, usage_tag=CCPL_TAG_CPL_REST, field_unit="W/m2", annotation="register field instance of Net surface heat flux")
++        field_id_ssh = CCPL_register_field_instance(sshm, "ssh", decomp_id, grid_h2d_id, 0, usage_tag=CCPL_TAG_CPL_REST, field_unit="m", annotation="register field instance of Sea surface height")
++        field_id_mld = CCPL_register_field_instance(mldm, "mld", decomp_id, grid_h2d_id, 0, usage_tag=CCPL_TAG_CPL_REST, field_unit="m", annotation="register field instance of Mixed layer depth")
++
++        !--------register coupling frequency to C-Coupler2-------------
++        timer_id = CCPL_define_single_timer(ocn_demo_comp_id, "seconds", coupling_freq, 0, 0, annotation="define a single timer for ocn_demo")
++
++        !--------register export & import interface to C-Coupler2------
++        fields_id(1) = field_id_sst
++        fields_id(2) = field_id_shf
++        fields_id(3) = field_id_ssh
++        fields_id(4) = field_id_mld
++        export_interface_id = CCPL_register_export_interface("send_data_to_atm", 4, fields_id, timer_id, annotation="register interface for sending data to atmosphere")
++
++        fields_id(1) = field_id_psl
++        fields_id(2) = field_id_prect
++        fields_id(3) = field_id_fsds
++        fields_id(4) = field_id_flds
++        import_interface_id = CCPL_register_import_interface("receive_data_from_atm", 4, fields_id, timer_id, 0, annotation="register interface for receiving data from atmosphere")
++
++        call CCPL_end_coupling_configuration(ocn_demo_comp_id, annotation = "component ocn_demo ends configuration")
+ 
+     end subroutine register_component_coupling_configuration
+ 
+diff --git a/coupling_atm_model_mod.f90_bak b/coupling_atm_model_mod.f90_bak
+deleted file mode 100755
+index cd45873..0000000
+--- a/coupling_atm_model_mod.f90_bak
++++ /dev/null
+@@ -1,88 +0,0 @@
+-module coupling_atm_model_mod
+-
+-    use CCPL_interface_mod
+-    
+-    implicit none
+-    
+-    integer, private, parameter           :: RKIND = 4
+-    integer, private                      :: decomp_id, grid_h2d_id
+-    integer, public                       :: ocn_demo_comp_id
+-    integer, allocatable, public          :: mask_land(:)
+-    real(kind=RKIND), allocatable, public :: psl(:), ts(:), flds(:), fsds(:)    
+-    
+-    
+-contains
+-
+-    subroutine register_ocn_demo_component(comm)
+-
+-        use CCPL_interface_mod
+-        integer, intent(inout) :: comm
+-        ocn_demo_comp_id = CCPL_register_component(-1, "ocn_demo", "ocn", comm, change_dir=.True., annotation = "register ocn model ocn_demo")
+-    end subroutine register_ocn_demo_component
+-
+-    subroutine register_grids_decomps(nlat, nlon, lat, lon, decomp_size, local_id, npes, local_grid_cell_index)
+-
+-        use CCPL_interface_mod
+-
+-        implicit none
+-        integer, intent(in) :: nlat, nlon
+-        integer, intent(in) :: decomp_size, local_id, npes
+-        integer, intent(in) :: local_grid_cell_index(decomp_size, npes)
+-        real(kind=RKIND), intent(in) :: lat(nlat), lon(nlon)
+-
+-        grid_h2d_id = CCPL_register_H2D_grid_via_global_data(ocn_demo_comp_id, "ocn_demo_H2D_grid", "LON_LAT", "degrees", "cyclic", nlon, nlat, 0.0, 360.0, -90.0, 90.0, lon, lat, annotation="register gamil H2D grid")
+-        decomp_id = CCPL_register_normal_parallel_decomp("decomp_ocn_demo_grid", grid_H2D_id, decomp_size, local_grid_cell_index(:,local_id+1), "allocate for ocn_demo grid")
+-    end subroutine register_grids_decomps
+-
+-    subroutine register_component_coupling_configuration(decomp_size, sst, shf, ssh, mld, &
+-            time_step, comp_id, comp_name, import_interface_id, export_interface_id)
+-
+-        use CCPL_interface_mod
+-
+-        implicit none
+-
+-        integer, intent(in)          :: decomp_size
+-        real(kind=RKIND), intent(in) :: sst(decomp_size), shf(decomp_size), ssh(decomp_size), mld(decomp_size)
+-        character(len=*), intent(in) :: comp_name
+-        integer, intent(inout)       :: comp_id
+-        integer, intent(out)         :: export_interface_id, import_interface_id
+-        character*1024               :: annotation
+-        integer                      :: time_step, timer_id, fields_id(5)
+-        integer                      :: field_id_psl, field_id_ts, field_id_flds, field_id_fsds
+-        integer                      :: field_id_sst, field_id_ssh, field_id_shf, field_id_mld
+-
+-        !----------------register time step to C-Coupler2--------------------------------------
+-        call CCPL_set_normal_time_step(ocn_demo_comp_id, time_step, annotation="setting the time step for ocn_demo")
+-        !----------------register field instances to C-Coupler2--------------------------------
+-        allocate(psl(decomp_size))
+-        allocate(ts(decomp_size))
+-        allocate(flds(decomp_size))
+-        allocate(fsds(decomp_size))
+-        field_id_psl = CCPL_register_field_instance(psl(1:decomp_size), "psl", decomp_id, grid_h2d_id, 0, usage_tag=CCPL_TAG_CPL_REST, field_unit="Pa", annotation="register field instance of Sea level pressure") 
+-        field_id_ts = CCPL_register_field_instance(ts(1:decomp_size), "ts", decomp_id, grid_h2d_id, 0, usage_tag=CCPL_TAG_CPL_REST, field_unit="K", annotation="register field instance of Surface temperature")
+-        field_id_fsds = CCPL_register_field_instance(fsds(1:decomp_size), "fsds", decomp_id, grid_h2d_id, 0, usage_tag=CCPL_TAG_CPL_REST, field_unit="W/m2", annotation="register field instance of Short wave downward flux at surface")
+-        field_id_flds  = CCPL_register_field_instance(flds(1:decomp_size), "flds", decomp_id, grid_h2d_id, 0, usage_tag=CCPL_TAG_CPL_REST, field_unit="W/m2", annotation="register field instance of Long wave downward flux at surface")
+-        field_id_sst  = CCPL_register_field_instance(sst, "sst", decomp_id, grid_h2d_id, 0, usage_tag=CCPL_TAG_CPL_REST, field_unit="C", annotation="register field instance of Sea surface temperature")
+-        field_id_shf  = CCPL_register_field_instance(shf, "shf", decomp_id, grid_h2d_id, 0, usage_tag=CCPL_TAG_CPL_REST, field_unit="W/m2", annotation="register field instance of Net surface heat flux")
+-        field_id_ssh = CCPL_register_field_instance(ssh, "ssh", decomp_id, grid_h2d_id, 0, usage_tag=CCPL_TAG_CPL_REST, field_unit="m", annotation="register field instance of Sea surface height")
+-        field_id_mld = CCPL_register_field_instance(mld, "mld", decomp_id, grid_h2d_id, 0, usage_tag=CCPL_TAG_CPL_REST, field_unit="m", annotation="register field instance of Mixed layer depth")
+-        !----------------register coupling timers to C-Coupler2--------------------------------
+-        timer_id = CCPL_define_single_timer(ocn_demo_comp_id, "steps", 1, 0, 0, annotation="define a single timer for comp_id_ocn_demo")
+-        !----------------register export interface to C-Coupler2--------------------------------
+-        fields_id(1) = field_id_sst
+-        fields_id(2) = field_id_shf
+-        fields_id(3) = field_id_ssh
+-        fields_id(4) = field_id_mld
+-        export_interface_id = CCPL_register_export_interface("send_data_to_atm", 4, fields_id, timer_id, annotation="register interface for sending data to atmosphere")
+-
+-        fields_id(1) = field_id_psl
+-        fields_id(2) = field_id_ts
+-        fields_id(3) = field_id_fsds
+-        fields_id(4) = field_id_flds
+-        import_interface_id = CCPL_register_import_interface("receive_data_from_atm", 4, fields_id, timer_id, 0, annotation="register interface for receiving data from atmosphere")
+-        call CCPL_do_individual_coupling_generation(comp_id, annotation= "component "//comp_name//" generates the coupling procedure")
+-        call CCPL_end_coupling_configuration(comp_id, annotation = "componnent "//comp_name//" ends registration")
+-
+-    end subroutine register_component_coupling_configuration
+-    
+-end module coupling_atm_model_mod
+diff --git a/decomp_init_mod.f90 b/decomp_init_mod.f90
+old mode 100644
+new mode 100755
+index e2076f7..7cf229a
+--- a/decomp_init_mod.f90
++++ b/decomp_init_mod.f90
+@@ -1,31 +1,135 @@
+ module decomp_init_mod
+     integer, public              :: decomp_size
+-    integer, public, allocatable :: local_grid_cell_index(:,:)
++    integer, public, allocatable :: local_grid_cell_index(:)
+ contains
+     subroutine decomp_init
+-        use spmd_init_mod, only:npes, ier
++        use spmd_init_mod, only: mpicomm, mytask_id, npes, ier
+         use mpi
+         use grid_init_mod, only:latlen, lonlen
+-        use parse_namelist_mod, only : decomp_type_id
++        use parse_namelist_mod, only : decomp_type_id, overlapping_rate
+         implicit none
+ 
+-        integer :: i, j
+-        decomp_size = latlen*lonlen/npes
+-        if ((latlen*lonlen-decomp_size*npes) .ne. 0) then
+-            print *, "ERROR : grid cells cannot be equally decompsed to the current number of processes"
+-            call mpi_finalize(ier)
+-        end if
+-
+-        allocate(local_grid_cell_index(decomp_size, npes))
++        integer :: i, ii,j, k, t, additional_size, num_total_point,max_num_point
++        integer :: x_size, y_size, task_id, displ
++        integer :: xdisp,xcount,ydisp,ycount
++        integer :: displs(1:npes)
++        integer :: sndcnts(1:npes)
++        integer :: max_num_point_proc_num,num_remaining_point 
++        num_total_point = latlen*lonlen
++        decomp_size = num_total_point/npes
++        if(mod(mytask_id, npes).lt.mod(num_total_point, npes)) then
++            decomp_size = decomp_size+1
++        endif
+ 
+         if (decomp_type_id == 1) then
+-            do j = 1, npes
++            allocate(local_grid_cell_index(decomp_size))
+             do i = 1, decomp_size
+-                local_grid_cell_index(i,j) = j+(i-1)*npes
++                local_grid_cell_index(i) = mytask_id+1+(i-1)*npes
++                if (local_grid_cell_index(i) .gt. num_total_point) then
++                    local_grid_cell_index(i) = local_grid_cell_index(i) - num_total_point
++                endif
++            end do
++        else if (decomp_type_id == 2) then
++            additional_size = int(real(decomp_size)*(overlapping_rate - 1.0))
++            ! 这个参数大于1的话是重叠，重叠的个数这个，如果参数小于1，则是缺失了，缺失的话addition是负的
++            allocate(local_grid_cell_index(decomp_size+additional_size))
++
++            decomp_size = num_total_point/npes
++            if(mytask_id .ge. mod(num_total_point, npes)) then
++                displ = decomp_size*mytask_id + mod(num_total_point, npes)
++            else
++                displ = decomp_size*mytask_id + mytask_id
++                decomp_size = decomp_size + 1
++            endif
++            do i = 1, decomp_size + additional_size
++                local_grid_cell_index(i) = i+displ
++                if (local_grid_cell_index(i) .gt. num_total_point) then
++                    local_grid_cell_index(i) = local_grid_cell_index(i) - num_total_point
++                endif
+             end do
++            decomp_size = decomp_size + additional_size
++        else if (decomp_type_id == 3) then
++            ii = int(sqrt(real(npes)))
++            do i=ii, 1, -1
++                if( (mod(npes, i).eq.0) ) then
++                    y_size = i
++                    x_size = npes/i
++                    exit
++                endif
++            enddo
++            xcount = lonlen / x_size
++            ycount = latlen / y_size
++            if(mod(mytask_id, x_size).lt.mod(lonlen, x_size)) then
++                xcount = xcount + 1
++            endif
++            if(((mytask_id)/x_size).lt.mod(latlen, y_size)) then
++                ycount = ycount + 1
++            endif              
++
++            if(mod(mytask_id,x_size) .ge. mod(lonlen, x_size)) then
++                xdisp = (lonlen/x_size)*mod(mytask_id,x_size)+mod(lonlen, x_size)
++            else
++                xdisp = (lonlen/x_size)*mod(mytask_id,x_size)+mod(mytask_id, x_size)
++            endif
++            if (mytask_id/x_size .ge. mod(latlen, y_size)) then
++               ydisp = (latlen/y_size)*(mytask_id/x_size)+mod(latlen, y_size)
++            else
++               ydisp = (latlen/y_size)*(mytask_id/x_size)+mytask_id/x_size
++            endif
++            allocate(local_grid_cell_index(xcount*ycount))
++            decomp_size = xcount*ycount
++            k=1
++            do j=ydisp, ydisp+ycount-1
++                do i=xdisp, xdisp+xcount-1
++                    local_grid_cell_index(k)= i + 1 + lonlen*j
++                    k=k+1
++                enddo
++            enddo
++        else if (decomp_type_id == 4) then
++            ! 负载不平衡
++            if ( overlapping_rate .lt. 1.0) then
++                print *, "ERROR! The load balancing rate must greater than 1"
++                call mpi_finalize(ier)
++            endif
++            
++            max_num_point = int(real(num_total_point/npes)*3.5)
++            max_num_point_proc_num = num_total_point/2/max_num_point
++            do i=1, max_num_point_proc_num
++                sndcnts(i) = max_num_point
++            enddo
++            num_remaining_point=num_total_point-sum(sndcnts(1:max_num_point_proc_num))
++            do i=max_num_point_proc_num+1, npes
++                sndcnts(i)=num_remaining_point/(npes-max_num_point_proc_num)
++            enddo
++            num_remaining_point=num_total_point-sum(sndcnts)
++            if (num_remaining_point .gt. 0) then
++                do i=1,num_remaining_point
++                    sndcnts(i) = sndcnts(i)+1
++                enddo
++            else
++                do i=1,-num_remaining_point
++                    sndcnts(i) = sndcnts(i)-1
++                enddo
++            endif
++            displs(1) = 0
++            do i=2, npes
++                displs(i) = displs(i-1) + sndcnts(i-1)
+             end do
+-            print *, "decomp_type_id: ",decomp_type_id
+-        !else
+-        end if
++            if(mytask_id==0) then
++                print *, displs
++                print *, sndcnts
++            endif
++            decomp_size=sndcnts(mytask_id+1)
++            allocate(local_grid_cell_index(decomp_size))
++            do i = 1, decomp_size
++                local_grid_cell_index(i) = i+displs(mytask_id+1)
++            end do
++        endif
++        if(mytask_id.eq.0) then
++            open(1, file="record_time", position="append")
++            write(1,*), decomp_type_id, num_total_point, npes, overlapping_rate
++            close(1)
++        endif
+     end subroutine decomp_init
++
+ end module decomp_init_mod
+diff --git a/grid_init_mod.f90 b/grid_init_mod.f90
+old mode 100644
+new mode 100755
+index 74e06fa..28ec581
+--- a/grid_init_mod.f90
++++ b/grid_init_mod.f90
+@@ -1,6 +1,6 @@
+ module grid_init_mod
+ 
+-    real, public, allocatable :: lev(:), lat(:), lon(:)
++    real(kind=4), public, allocatable :: lat(:), lon(:)
+     integer, public           :: latlen, lonlen
+ 
+ contains
+@@ -8,7 +8,8 @@ contains
+ 
+     subroutine grid_init
+ 
+-        use spmd_init_mod
++        use spmd_init_mod, only:masterproc, mpicomm, ier
++        use parse_namelist_mod, only: num_point
+         use mpi
+         implicit none
+         include "netcdf.inc"
+@@ -18,34 +19,56 @@ contains
+         integer        :: ncid_input, ret
+         integer        :: latid, lonid
+         integer        :: latdimid, londimid
++        integer        :: ii, i
+ 
+-        input_data_dir = './'
+-        input_file_name = "licom.059106-0591071.nc"
+-        input_file_dir_name = input_data_dir//input_file_name
+-        if (masterproc) then
+-            ret = nf_open (input_file_dir_name, nf_nowrite, ncid_input)
+-            
+-            ret = nf_inq_dimid (ncid_input, "lat", latdimid)
+-            ret = nf_inq_dimid (ncid_input, "lon", londimid)
+-            ret = nf_inq_dimlen (ncid_input, latdimid, latlen)
+-            ret = nf_inq_dimlen (ncid_input, londimid, lonlen)
+-            
+-            allocate(lat(latlen), lon(lonlen))
+-            ret = nf_inq_varid (ncid_input, "lat", latid)
+-            ret = nf_inq_varid (ncid_input, "lon", lonid)
+-            ret = nf_get_var_real (ncid_input, latid, lat)
+-            ret = nf_get_var_real (ncid_input, lonid, lon)
+-        end if
+-
+-        call mpi_bcast(latlen, 1, mpi_integer, 0, mpicomm, ier)
+-        call mpi_bcast(lonlen, 1, mpi_integer, 0, mpicomm, ier)
+-
+-        if (masterproc /= .true.) then
+-            allocate(lat(latlen), lon(lonlen))
+-        end if
+-
+-        call mpi_bcast(lat, latlen, mpi_integer, 0, mpicomm, ier)
+-        call mpi_bcast(lon, lonlen, mpi_integer, 0, mpicomm, ier)
++        ii = sqrt(real(num_point))
++        do i=1, ii
++            if( (mod(num_point, i).eq.0) .and. (i .ne. num_point/i)) then
++                if (i .ge. num_point/i) then
++                    lonlen = i
++                    latlen = num_point/i
++                else
++                    latlen = i
++                    lonlen = num_point/i
++                endif
++            endif
++        enddo
++
++        allocate(lon(lonlen),lat(latlen))
++        do i=1,latlen
++            lat(i) = -89.0 + 179.0 * i / latlen
++        enddo
++        do i=1,lonlen
++            lon(i) = 0.0 + 359.0 * i / lonlen
++        enddo
++
++!        input_data_dir = ''
++!        input_file_name = 'atm_demo.h0.0591-06.nc'
++!        input_file_dir_name = input_data_dir//input_file_name
++!        if (masterproc) then
++!            ret = nf_open (input_file_name, nf_nowrite, ncid_input)
++!            
++!            ret = nf_inq_dimid (ncid_input, "lat", latdimid)
++!            ret = nf_inq_dimid (ncid_input, "lon", londimid)
++!            ret = nf_inq_dimlen (ncid_input, latdimid, latlen)
++!            ret = nf_inq_dimlen (ncid_input, londimid, lonlen)
++!            
++!            allocate(lat(latlen), lon(lonlen))
++!            ret = nf_inq_varid (ncid_input, "lat", latid)
++!            ret = nf_inq_varid (ncid_input, "lon", lonid)
++!            ret = nf_get_var_real (ncid_input, latid, lat)
++!            ret = nf_get_var_real (ncid_input, lonid, lon)
++!        end if
++!
++!        call mpi_bcast(latlen, 1, mpi_integer, 0, mpicomm, ier)
++!        call mpi_bcast(lonlen, 1, mpi_integer, 0, mpicomm, ier)
++!
++!        if (masterproc == .false.) then
++!            allocate(lat(latlen), lon(lonlen))
++!        end if
++!
++!        call mpi_bcast(lat, latlen, mpi_real4, 0, mpicomm, ier)
++!        call mpi_bcast(lon, lonlen, mpi_real4, 0, mpicomm, ier)
+ 
+     end subroutine grid_init
+ 
+diff --git a/model_setting_mod.f90 b/model_setting_mod.f90
+old mode 100644
+new mode 100755
+index 8d02dee..51d12fc
+--- a/model_setting_mod.f90
++++ b/model_setting_mod.f90
+@@ -1,5 +1,7 @@
+ module model_setting_mod
+ 
++    integer, public          :: time_length
++
+ contains
+ 
+   subroutine ocn_demo_init
+@@ -16,27 +18,72 @@ contains
+       integer :: mpicom
+ 
+       mpicom = CCPL_NULL_COMM
++
+       call register_ocn_demo_component(mpicom)
++
+       call parse_namelist
+       call spmd_init(mpicom)
+       call grid_init
+       call decomp_init
+       call variable_init
+-      !register component coupling configuration (including regisger component, time step, grid, decomp, field, interface)
++
++      call register_component_coupling_configuration
+ 
+   end subroutine ocn_demo_init
+ 
+   subroutine ocn_demo_step_on
+-      !do i=1,time_length/time_step
+-      !    sstm = sst_l
+-      !    !execute interface(do_coupling_CCPL)
+-      !end do
++
++      use mpi
++      use parse_namelist_mod, only:time_step
++      use variable_mod, only:sstm, shfm, sshm ,mldm, sst_l, shf_l, mld_l, ssh_l
++      use coupling_atm_model_mod, only:ocn_demo_comp_id
++      use CCPL_interface_mod
++
++      implicit none
++
++      integer    :: i
++      logical    :: interface_status
++      
++      time_length = 3600
++
++      do i=1,time_length/time_step
++          
++          sstm = sst_l
++          shfm = shf_l
++          sshm = ssh_l
++          mldm = mld_l
++          
++!          interface_status = CCPL_execute_interface_using_name(ocn_demo_comp_id, "send_data_to_atm", .false., annotation = "execute interface for sending data to atmosphere")
++          
++!          interface_status = CCPL_execute_interface_using_name(ocn_demo_comp_id, "receive_data_from_atm", .false., annotation = "execute interface for receiving data from atmosphere")
++          
++!          call CCPL_do_restart_write_IO(ocn_demo_comp_id, .false.)
++!          call CCPL_advance_time(ocn_demo_comp_id, "ocn_demo advances time for one step")
++      end do
++
+   end subroutine ocn_demo_step_on
+ 
+   subroutine finalize_ocn_demo
+-      use spmd_init_mod
++
++      use mpi
++      use spmd_init_mod, only:ier
++      use variable_mod, only:sstm, shfm, sshm, mldm, sst_l, shf_l, ssh_l, &
++          mld_l, ssh, sst,shf,mld,mask
++      use grid_init_mod, only:lon,lat
++      use decomp_init_mod, only:local_grid_cell_index
++      use CCPL_interface_mod
++
+       implicit none
+-      !deallocate(sst)
++
++      deallocate(sstm, shfm, sshm, mldm)
++      deallocate(sst_l, shf_l, ssh_l, mld_l)
++      deallocate(local_grid_cell_index)
++      !deallocate(ssh, sst,shf,mld)
++      deallocate(lat,lon,mask)
++
++      call CCPL_finalize(.false., "ocn_demo finalizes C-Coupler2")
+       call mpi_finalize(ier)
++
+   end subroutine finalize_ocn_demo
++
+ end module model_setting_mod
+diff --git a/ocn_demo.f90 b/ocn_demo.f90
+old mode 100644
+new mode 100755
+index 3befac4..83c1db0
+--- a/ocn_demo.f90
++++ b/ocn_demo.f90
+@@ -1,9 +1,21 @@
+ program ocn_demo
+     use mpi
+     use model_setting_mod
++    use spmd_init_mod
++
+     implicit none
+ 
+     call ocn_demo_init
+-    !call ocn_demo_step_on
++    if (masterproc) then
++        print *, "ocn_demo_init finished"
++    end if
++    call ocn_demo_step_on
++    if (masterproc) then
++        print *, "ocn_demo finished time integration"
++    end if
+     call finalize_ocn_demo
++    if (masterproc) then
++        print *, "ocn_demo has been finalized"
++    end if
++
+ end program
+diff --git a/ocn_demo.f90_bak b/ocn_demo.f90_bak
+deleted file mode 100755
+index 0934f3c..0000000
+--- a/ocn_demo.f90_bak
++++ /dev/null
+@@ -1,239 +0,0 @@
+-module model_setting
+-    integer, public :: npes, mpicom
+-    integer, public :: timelen, levlen, latlen, lonlen
+-    real, public, allocatable :: ssh(:,:), shf(:,:)
+-    real, public, allocatable :: sst(:,:), mld(:,:), ssf(:,:)
+-    real, public, allocatable :: lev(:), lat(:), lon(:)
+-
+-    public arrays_are_the_same !check if two arrays with same dimensions are the same
+-
+-    contains
+-    logical function arrays_are_the_same(global, global_back)
+-        implicit none
+-        real, intent(in) :: global(latlen, lonlen)
+-        real, intent(in) :: global_back(latlen, lonlen)
+-        integer :: i, j, m
+-
+-        arrays_are_the_same = .true.
+-            do j = 1, latlen
+-            do m = 1, lonlen
+-                if (global(j,m) .ne. global_back(j,m)) then
+-                    arrays_are_the_same = .false.
+-                end if
+-            end do
+-            end do
+-        return
+-    end function
+-
+-    subroutine read_input_data(masterproc)
+-        use mpi
+-        implicit none
+-        include "netcdf.inc"
+-!#include <mpif.h>
+-        logical, intent(in) :: masterproc
+-        character*1024 :: input_data_dir, input_file_name
+-        character*1024 :: input_file_dir_name
+-        integer :: ncid_input, ret
+-        integer :: sshid, shfid, tsid, mldid, ssfid
+-        integer :: levid
+-        integer :: latid
+-        integer :: lonid
+-        integer :: decomp_size, local_grid_cell_index
+-
+-        input_data_dir  = './'
+-        input_file_name = "licom.059106-0591071.nc"
+-        input_file_dir_name = input_data_dir//input_file_name
+-
+-        levlen = 30
+-        latlen = 196
+-        lonlen = 360
+-        timelen = 1
+-        allocate(lev(levlen), lat(latlen), lon(lonlen))
+-        if (masterproc) then
+-            ret = nf_open (input_file_name, nf_nowrite, ncid_input)
+-    
+-            ret = nf_inq_varid (ncid_input, "z0", sshid) !sea surface height
+-            ret = nf_inq_varid (ncid_input, "net1", shfid)!net surface heat flux
+-            ret = nf_inq_varid (ncid_input, "sst", tsid)!3d temperature
+-            ret = nf_inq_varid (ncid_input, "mld", mldid)!mixed layer depth
+-            ret = nf_inq_varid (ncid_input, "net2", ssfid)!net surface salt flux
+-            ret = nf_inq_varid (ncid_input, "lev", levid)
+-            ret = nf_inq_varid (ncid_input, "lon", lonid)
+-            ret = nf_inq_varid (ncid_input, "lat", latid)
+-    
+-            !allocate(ssht(timelen, latlen, lonlen), shft(timelen, latlen, lonlen), mldt(timelen, latlen, lonlen), ssft(timelen, latlen, lonlen))
+-            !allocate(lev(levlen), lat(latlen), lon(lonlen))
+-            !allocate(tst(timelen,levlen, latlen, lonlen), sst(latlen, lonlen))
+-            !allocate(ssh(latlen, lonlen), shf(latlen, lonlen), mld(latlen, lonlen))
+-            !allocate(ssf(latlen, lonlen))
+-            allocate(sst(latlen, lonlen))
+-            allocate(ssh(latlen, lonlen), shf(latlen, lonlen))
+-            allocate(mld(latlen, lonlen))
+-
+-            ret = nf_get_var_real (ncid_input, sshid, ssh)
+-            ret = nf_get_var_real (ncid_input, shfid, shf)
+-            ret = nf_get_var_real (ncid_input, tsid, sst)
+-            ret = nf_get_var_real (ncid_input, mldid, mld)
+-
+-            ret = nf_get_var_real (ncid_input, levid, lev)
+-            ret = nf_get_var_real (ncid_input, latid, lat)
+-            ret = nf_get_var_real (ncid_input, lonid, lon)
+-        else
+-            allocate(ssh(1,1), shf(1,1), mld(1,1), ssf(1,1))
+-            allocate(sst(1,1))
+-!           allocate(ssh(latlen,lonlen), shf(latlen,lonlen), mld(latlen,lonlen), ssf(latlen,lonlen))
+-!           allocate(lev(1), lat(1), lon(1))
+-!           allocate(sst(latlen,lonlen))
+-        end if 
+-
+-    end subroutine read_input_data
+-
+-    subroutine scatter_field(global_field, local_field, local_grid_cell_indexes, decomp_size, masterproc, ier)
+-        use mpi
+-        implicit none
+-        
+-        integer, intent(in) :: decomp_size, ier
+-        integer, intent(in) :: local_grid_cell_indexes(decomp_size,npes)
+-        logical, intent(in) :: masterproc
+-        real, intent(in) :: global_field(latlen, lonlen)
+-        real, intent(out) :: local_field(decomp_size)
+-
+-        !------------local variables---------------------------
+-        real gfield(latlen*lonlen)
+-        real lfield(decomp_size)
+-        real gfield_back(latlen*lonlen)
+-        real global_field_back(latlen,lonlen)
+-        integer :: p, i, j, m
+-        integer :: displs(1:npes) !scatter displacements
+-        integer :: sndcnts(1:npes) !scatter send counts
+-        integer :: recvcnt !scatter receive count
+-
+-        logical :: check
+-        !number of grid points scattered to eache process
+-        
+-        sndcnts(:) = decomp_size
+-        displs(1) = 0
+-        do p=2, npes
+-            displs(p) = displs(p-1)+decomp_size
+-        end do
+-        recvcnt = decomp_size
+-
+-        !copy field into global data structure
+-        if (masterproc) then
+-            j = 1
+-            do p=1,npes
+-                do i=1,decomp_size
+-                    m = ceiling((local_grid_cell_indexes(i,p)-0.5)/(latlen/1.0))
+-                    gfield(j) = global_field(local_grid_cell_indexes(i,p)-latlen*(m-1),m)
+-                    j = j+1
+-                end do
+-            end do
+-        end if
+-
+-        !scatter to other processes
+-        call mpi_scatterv(gfield, sndcnts, displs, mpi_real4, &
+-            lfield, recvcnt, mpi_real4, 0, mpicom, ier)
+-        !copy into local data structure
+-        do i=1,decomp_size
+-            local_field(i) = lfield(i)
+-        end do
+-    end subroutine scatter_field
+-
+-end module
+-
+-program licom
+-    use model_setting
+-    use mpi
+-    use coupling_atm_model_mod
+-    
+-    implicit none
+-    
+-    integer :: ier, mpitask_id
+-    logical :: masterproc
+-    integer :: i, j
+-    real(4), allocatable :: ssh_l(:), shf_l(:)
+-    real(4), allocatable :: sst_l(:), mld_l(:)
+-    real(4), allocatable :: sstm(:),shfm(:)
+-    real(4), allocatable :: sshm(:),mldm(:)
+-    integer :: time_step, time_length
+-    integer :: decomp_size
+-    integer, allocatable :: local_grid_cell_index(:,:)
+-
+-    integer :: import_interface_id, export_interface_id
+-
+-    logical :: interface_status
+-
+-    mpicom = CCPL_NULL_COMM
+-    call mpi_init(ier)
+-    call register_licom_component(mpicom)
+-    call mpi_comm_rank(mpicom, mpitask_id, ier)
+-    call mpi_comm_size(mpicom, npes, ier)
+-
+-    if (mpitask_id == 0) then
+-        masterproc = .true.
+-    else
+-        masterproc = .false.
+-    end if
+-
+-    call read_input_data(masterproc)
+-
+-    call mpi_bcast(lev, levlen, mpi_integer, 0, mpicom, ier)
+-    call mpi_bcast(lat, latlen, mpi_integer, 0, mpicom, ier)
+-    call mpi_bcast(lon, lonlen, mpi_integer, 0, mpicom, ier)
+-
+-
+-    !---setting up decomposition for licom----------------------
+-    decomp_size = latlen*lonlen/npes
+-    allocate(sst_l(decomp_size),shf_l(decomp_size))
+-    allocate(ssh_l(decomp_size),mld_l(decomp_size))
+-
+-    if ((latlen*lonlen-decomp_size*npes) .ne. 0) then
+-        print *, "ERROR : grid cells cannot be equally decomposed to number of porcs"
+-    end if
+-    allocate(local_grid_cell_index(decomp_size,npes))
+-    do j = 1, npes
+-    do i = 1, decomp_size
+-        !local_grid_cell_index(i,j) = i+(j-1)*decomp_size
+-        local_grid_cell_index(i,j) = j+(i-1)*npes
+-    end do
+-    end do
+-
+-    call scatter_field(sst, sst_l, local_grid_cell_index, decomp_size, masterproc, ier)
+-    call scatter_field(shf, shf_l, local_grid_cell_index, decomp_size, masterproc, ier)
+-    call scatter_field(ssh, ssh_l, local_grid_cell_index, decomp_size, masterproc, ier)
+-    call scatter_field(mld, mld_l, local_grid_cell_index, decomp_size, masterproc, ier)
+-
+-
+-    call register_grids_decomps(latlen, lonlen, lat, lon, decomp_size, mpitask_id, npes, local_grid_cell_index)
+-
+-    !------------Entering time loop-----------------------------
+-    time_length = 3*3600     !in seconds
+-    time_step = 1800         !in seconds
+-
+-    !assign variables for model processing
+-    allocate(sstm(decomp_size),shfm(decomp_size))
+-    allocate(sshm(decomp_size),mldm(decomp_size))
+-
+-    call register_component_coupling_configuration(decomp_size, sstm, shfm, sshm, mldm, time_step, licom_comp_id, "licom", import_interface_id, export_interface_id)
+-
+-    do i=1,time_length/time_step
+-        sstm = sst_l
+-        shfm = shf_l
+-        sshm = ssh_l
+-        mldm = mld_l
+-
+-        interface_status = CCPL_execute_interface_using_name(licom_comp_id, "send_data_to_atm", .false., annotation = "execute interface for sending data to atmosphere")
+-        interface_status = CCPL_execute_interface_using_name(licom_comp_id, "receive_data_from_atm", .false., annotation = "execute interface for receiving data from atmosphere")
+-        call CCPL_do_restart_write_IO(licom_comp_id, .false.)
+-        call CCPL_advance_time(licom_comp_id, "licom advances time for one step")
+-    end do
+-
+-    deallocate(sstm,shfm,sshm,mldm)
+-    deallocate(sst_l,shf_l,ssh_l,mld_l)
+-    deallocate(local_grid_cell_index)
+-    deallocate(ssh,sst,shf,mld,lev,lat,lon)
+-
+-    call mpi_finalize(ier)
+-    print*,"licom running completed"
+-
+-end program
+diff --git a/ocn_demo.nml b/ocn_demo.nml
+old mode 100644
+new mode 100755
+index 7b160de..0811ad0
+--- a/ocn_demo.nml
++++ b/ocn_demo.nml
+@@ -1,5 +1,7 @@
+ &ocn_demo_nml
+-  time_step               = 1800
+-  decomp_type_id          = 1
+-  coupling_freq           = 1800
++time_step               = 1800
++decomp_type_id          = 1
++coupling_freq           = 1800
++num_point 				= 500000
++overlapping_rate        = 1.0
+ /
+diff --git a/parse_namelist_mod.f90 b/parse_namelist_mod.f90
+old mode 100644
+new mode 100755
+index 1236801..6db99e2
+--- a/parse_namelist_mod.f90
++++ b/parse_namelist_mod.f90
+@@ -1,10 +1,12 @@
+ module parse_namelist_mod
+     integer, public :: time_step, coupling_freq, decomp_type_id
++    integer, public :: num_point
++    real(kind=4), public :: overlapping_rate
+ contains
+     subroutine parse_namelist
+         implicit none
+         namelist /ocn_demo_nml/ time_step  ,decomp_type_id  , &
+-            coupling_freq
++            coupling_freq,num_point,overlapping_rate
+         open(10, file="./ocn_demo.nml")
+         read(10, nml=ocn_demo_nml)
+     end subroutine parse_namelist
+diff --git a/spmd_init_mod.f90 b/spmd_init_mod.f90
+old mode 100644
+new mode 100755
+diff --git a/variable_init_mod.f90 b/variable_init_mod.f90
+old mode 100644
+new mode 100755
+index a2c05c1..45733fa
+--- a/variable_init_mod.f90
++++ b/variable_init_mod.f90
+@@ -3,14 +3,19 @@ module variable_mod
+     real(kind=4), public, allocatable :: sst(:,:), mld(:,:)
+     real(kind=4), public, allocatable :: sst_l(:), mld_l(:)
+     real(kind=4), public, allocatable :: ssh_l(:), shf_l(:)
++    real(kind=4), public, allocatable :: sstm(:), mldm(:)
++    real(kind=4), public, allocatable :: sshm(:), shfm(:)
++    integer, public, allocatable      :: mask(:)
++    real, public, allocatable   :: psl(:),prect(:),flds(:),fsds(:)
+ contains
+     subroutine variable_init
+-        call read_input_variables
++        !call read_input_variables
+         call scatter_fields
+     end subroutine variable_init
+ 
+     subroutine read_input_variables
+-        use spmd_init_mod
++        use mpi
++        use spmd_init_mod, only:masterproc
+         use grid_init_mod, only:latlen, lonlen
+ 
+         implicit none
+@@ -20,26 +25,39 @@ contains
+         character*1024 :: input_file_dir_name
+         integer :: ncid_input, ret
+         integer :: sshid, shfid, sstid, mldid
++        integer :: i, j
+ 
+-        input_data_dir = './'
+-        input_file_name = "licom.059106-0591071.nc"
++        input_data_dir = ''
++        input_file_name = "ocn_demo.059106-0591071.nc"
+         input_file_dir_name = input_data_dir//input_file_name
++        allocate(mask(lonlen*latlen))
++
+         if (masterproc) then
+-            ret = nf_open (input_file_dir_name, nf_nowrite, ncid_input)
+-            ret = nf_inq_varid (ncid_input, "z0", sshid)
+-            ret = nf_inq_varid (ncid_input, "net1", shfid)
+-            ret = nf_inq_varid (ncid_input, "sst", sstid)
+-            ret = nf_inq_varid (ncid_input, "mld", mldid)
+-
+-            allocate(shf(lonlen, latlen))
+-            allocate(sst(lonlen, latlen))
+-            allocate(ssh(lonlen, latlen))
+-            allocate(mld(lonlen, latlen))
+-
+-            ret = nf_get_var_real (ncid_input, sshid, ssh)
+-            ret = nf_get_var_real (ncid_input, shfid, shf)
+-            ret = nf_get_var_real (ncid_input, sstid, sst)
+-            ret = nf_get_var_real (ncid_input, mldid, mld)
++             ret = nf_open (input_file_name, nf_nowrite, ncid_input)
++			 ret = nf_inq_varid (ncid_input, "z0", sshid)
++			 ret = nf_inq_varid (ncid_input, "net1", shfid)
++			 ret = nf_inq_varid (ncid_input, "sst", sstid)
++			 ret = nf_inq_varid (ncid_input, "mld", mldid)
++
++			 allocate(shf(lonlen, latlen))
++			 allocate(sst(lonlen, latlen))
++			 allocate(ssh(lonlen, latlen))
++			 allocate(mld(lonlen, latlen))
++
++			 ret = nf_get_var_real (ncid_input, sshid, ssh)
++			 ret = nf_get_var_real (ncid_input, shfid, shf)
++			 ret = nf_get_var_real (ncid_input, sstid, sst)
++ 			 ret = nf_get_var_real (ncid_input, mldid, mld)
++
++ 			 mask=1
++             do i = 1,lonlen
++             do j = 1,latlen
++                 if (sst(i,j) .gt. 1.e+10) then
++		    mask(i+lonlen*(j-1)) = 0
++		end if
++             end do
++             end do
++
+         else
+             allocate(ssh(1,1),shf(1,1),sst(1,1),mld(1,1))
+         end if
+@@ -50,32 +68,44 @@ contains
+         use decomp_init_mod, only:local_grid_cell_index, decomp_size
+         use grid_init_mod, only:latlen, lonlen
+         implicit none
+-        real, intent(in)  :: global_field(lonlen, latlen)
+-        real, intent(out) :: local_field(decomp_size)
++        real(kind=4), intent(in)  :: global_field(lonlen, latlen)
++        real(kind=4), intent(out) :: local_field(decomp_size)
+         !----------local variables-----------------------------------
+-        real gfield(decomp_size, npes)
+-        real lfield(decomp_size)
++        !real(kind=4) gfield(decomp_size, npes)
++        real(kind=4) lfield(decomp_size)
+         integer :: p, i, j, m
+         integer :: displs(1:npes)  !scatter displacements
+         integer :: sndcnts(1:npes) !scatter send counts
+         integer :: recvcnt  !scatter receive count
++        integer, allocatable :: global_local_grid_cell_index(:)
++        real(kind=4),allocatable :: gfield(:)
+ 
+-        sndcnts(:) = decomp_size
+-        displs(1) = 0
+-        do p=2, npes
+-            displs(p) = displs(p-1)+decomp_size
+-        end do
+         recvcnt = decomp_size
++        call mpi_gather(decomp_size, 1, MPI_INTEGER, sndcnts, 1, MPI_INTEGER, 0, mpicomm, ier)
++
+         if (masterproc) then
+-            j = 1
+-            do p=1,npes
+-                do i=1,decomp_size
+-                    m = local_grid_cell_index(i,p)
+-                    gfield(i,p) = global_field(mod(m-1,lonlen)+1,(m-1)/lonlen+1)
+-                    write(*,*) "ocn pos ", m, mod(m-1,lonlen)+1, (m-1)/lonlen+1, i, p
++            displs(1) = 0
++            do p=2, npes
++                displs(p) = displs(p-1) + sndcnts(p-1)
++            end do
++        endif
++        
++        allocate(global_local_grid_cell_index(sum(sndcnts)))
++        allocate(gfield(sum(sndcnts)))
++        call mpi_gatherv(local_grid_cell_index, decomp_size, MPI_INTEGER, global_local_grid_cell_index, sndcnts, displs, MPI_INTEGER, 0, mpicomm, ier)
++
++        if (masterproc) then
++            print *, sndcnts
++            do p=1, npes
++                do i=1, sndcnts(p)
++                    m = global_local_grid_cell_index(displs(p) + i)
++                    !gfield(i,p) = global_field(mod(m-1,lonlen)+1,(m-1)/lonlen+1)
++                    !gfield(m) = global_field(mod(m-1,lonlen)+1,(m-1)/lonlen+1)
++                    gfield(displs(p) + i) = global_field(mod(m-1,lonlen)+1,(m-1)/lonlen+1)
+                 end do
+             end do
+         end if
++        
+         call mpi_scatterv(gfield, sndcnts, displs, mpi_real4, lfield, recvcnt, mpi_real4, 0, mpicomm, ier)
+         do i=1,decomp_size
+             local_field(i) = lfield(i)
+@@ -83,7 +113,10 @@ contains
+     end subroutine scatter_field
+     
+     subroutine scatter_fields
++        use mpi
++        use spmd_init_mod, only:mpicomm, ier
+         use decomp_init_mod, only:decomp_size
++        use grid_init_mod, only:lonlen, latlen
+         implicit none
+ 
+         allocate(sst_l(decomp_size))
+@@ -91,9 +124,24 @@ contains
+         allocate(ssh_l(decomp_size))
+         allocate(mld_l(decomp_size))
+ 
+-        call scatter_field(sst, sst_l)
+-        call scatter_field(shf, shf_l)
+-        call scatter_field(ssh, ssh_l)
+-        call scatter_field(mld, mld_l)
++        !call scatter_field(psl, psl_l)
++        !call scatter_field(prect, prect_l)
++        !call scatter_field(flds, flds_l)
++        !call scatter_field(fsds, fsds_l)
++
++        !call mpi_bcast(maskm,lonlen*latlen, mpi_integer, 0, mpicomm, ier)
++
++        allocate(sstm(decomp_size))
++        allocate(shfm(decomp_size))
++        allocate(sshm(decomp_size))
++        allocate(mldm(decomp_size))
++
++        allocate(psl(decomp_size))
++        allocate(prect(decomp_size))
++        allocate(flds(decomp_size))
++        allocate(fsds(decomp_size))
++        allocate(mask(lonlen*latlen)) 
++        mask = 1 
+     end subroutine scatter_fields
++
+ end module
