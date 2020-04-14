@@ -1,6 +1,0 @@
-C-Coupler REPORT PROGRESS in the component model "ocn_demo" corresponding to the executable named "ocn_demo", at the current simulation time of 20150801-00000 (the current step number is 0): the component model "ocn_demo" spends 0.136898 seconds for numerical algorithm "generating routing information new" at the current process
-
-
-C-Coupler REPORT PROGRESS in the component model "ocn_demo" corresponding to the executable named "ocn_demo", at the current simulation time of 20150801-00000 (the current step number is 0): the component model "ocn_demo" spends 2.038378 seconds for numerical algorithm "generating routing information old" at the current process
-
-

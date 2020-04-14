@@ -1,6 +1,0 @@
-C-Coupler REPORT PROGRESS in the component model "atm_demo" corresponding to the executable named "atm_demo", at the current simulation time of 20150801-00000 (the current step number is 0): the component model "atm_demo" spends 0.286961 seconds for numerical algorithm "generating routing information new" at the current process
-
-
-C-Coupler REPORT PROGRESS in the component model "atm_demo" corresponding to the executable named "atm_demo", at the current simulation time of 20150801-00000 (the current step number is 0): the component model "atm_demo" spends 1.997016 seconds for numerical algorithm "generating routing information old" at the current process
-
-
